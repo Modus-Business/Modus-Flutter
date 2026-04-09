@@ -3,6 +3,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:modus_flutter/main.dart';
 
 void main() {
+  testWidgets('로그인 버튼을 누르면 학생 수업 화면으로 이동한다', (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp(initialRoute: '/login'));
+
+    await tester.enterText(find.byType(TextField).at(0), 'student@modus.app');
+    await tester.enterText(find.byType(TextField).at(1), 'password123');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Sign in'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('참여 중인 수업'), findsOneWidget);
+    expect(find.text('프로덕트 스튜디오'), findsOneWidget);
+  });
+
   testWidgets('모바일 폭에서도 회원가입 플로우가 단계적으로 동작한다', (WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));

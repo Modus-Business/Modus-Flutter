@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/platform/web_url_sync.dart';
+import '../../../../routes/app_routes.dart';
 import '../../domain/entities/auth_form_state.dart';
 import '../../domain/entities/auth_mode.dart';
 import '../../domain/entities/signup_role.dart';
@@ -105,7 +106,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _handleLoginSubmit() {
-    _showPendingMessage('로그인 연동은 다음 단계에서 연결됩니다.');
+    Navigator.of(context).pushReplacementNamed(AppRoutes.classes);
   }
 
   void _handleSignupComplete() {
