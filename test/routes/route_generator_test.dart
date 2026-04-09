@@ -10,10 +10,10 @@ void main() {
     expect(find.text('교강사'), findsOneWidget);
   });
 
-  testWidgets('/login 진입 시 로그인 화면이 열린다', (WidgetTester tester) async {
-    await tester.pumpWidget(const MyApp(initialRoute: '/login'));
+  testWidgets('/classes 진입 시 학생 수업 목록이 열린다', (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp(initialRoute: '/classes'));
 
-    expect(find.text('Sign in'), findsNWidgets(2));
-    expect(find.text('이메일'), findsOneWidget);
+    expect(find.text('참여 중인 수업'), findsOneWidget);
+    expect(find.text('프로덕트 스튜디오'), findsOneWidget);
   });
 }
