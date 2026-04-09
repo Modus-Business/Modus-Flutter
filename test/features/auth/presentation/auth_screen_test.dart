@@ -44,8 +44,9 @@ void main() {
     await tester.tap(find.text('로그인하기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Sign in'), findsNWidgets(2));
-    expect(find.text('회원가입하기'), findsOneWidget);
+    expect(find.text('Welcome'), findsOneWidget);
+    expect(find.text('SIGN IN'), findsOneWidget);
+    expect(find.text('회원가입하기  ↗'), findsOneWidget);
   });
 
   testWidgets('데스크톱 폭에서도 로그인 화면이 정상 렌더링된다', (WidgetTester tester) async {
@@ -54,8 +55,8 @@ void main() {
 
     await tester.pumpWidget(const MyApp(initialRoute: '/login'));
 
-    expect(find.text('Modus'), findsOneWidget);
-    expect(find.text('Sign in'), findsNWidgets(2));
-    expect(find.text('회원가입하기'), findsOneWidget);
+    expect(find.text('Welcome'), findsOneWidget);
+    expect(find.text('SIGN IN'), findsOneWidget);
+    expect(find.text('회원가입하기  ↗'), findsOneWidget);
   });
 }

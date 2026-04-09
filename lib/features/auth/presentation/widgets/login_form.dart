@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../component/layout/responsive_layout.dart';
-import '../../../../component/theme/app_colors.dart';
+import 'auth_section_badge.dart';
 import 'auth_text_field.dart';
 
 class LoginForm extends StatelessWidget {
@@ -26,53 +25,70 @@ class LoginForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final bool isMobile = ResponsiveLayout.of(context) == ResponsiveSize.mobile;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Sign in', style: theme.textTheme.headlineMedium),
-        const SizedBox(height: 10),
-        Text('이메일과 비밀번호를 입력해 인증을 시작합니다.', style: theme.textTheme.bodyMedium),
-        SizedBox(height: isMobile ? 22 : 28),
+        const AuthSectionBadge(label: 'SIGN IN'),
+        const SizedBox(height: 26),
         AuthTextField(
-          label: '이메일',
-          hintText: 'you@school.edu',
+          hintText: '이메일을 입력하세요',
           controller: emailController,
+          icon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
           onChanged: onEmailChanged,
         ),
         const SizedBox(height: 18),
         AuthTextField(
-          label: '비밀번호',
           hintText: '비밀번호를 입력하세요',
           controller: passwordController,
+          icon: Icons.lock_outline_rounded,
           obscureText: true,
           onChanged: onPasswordChanged,
         ),
-        const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: canSubmit ? onSubmit : null,
-          child: const Text('Sign in'),
-        ),
-        const SizedBox(height: 20),
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 4,
-          runSpacing: 2,
-          children: [
-            Text(
-              '계정이 아직 없으신가요?',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppColors.primaryInk.withValues(alpha: 0.72),
+        const SizedBox(height: 30),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: canSubmit ? onSubmit : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6281F0),
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
               ),
             ),
-            TextButton(
-              onPressed: onSwitchToSignup,
-              child: const Text('회원가입하기'),
-            ),
-          ],
+            child: const Text('Sign in'),
+          ),
+        ),
+        const SizedBox(height: 26),
+        Center(
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 2,
+            runSpacing: 2,
+            children: [
+              const Text(
+                '계정이 없으신가요?',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1F2743),
+                ),
+              ),
+              TextButton(
+                onPressed: onSwitchToSignup,
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF1F2743),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                ),
+                child: const Text('회원가입하기  ↗'),
+              ),
+            ],
+          ),
         ),
       ],
     );

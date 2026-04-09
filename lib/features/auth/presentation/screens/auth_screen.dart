@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../../../../component/layout/responsive_layout.dart';
 import '../../../../core/platform/web_url_sync.dart';
 import '../../domain/entities/auth_form_state.dart';
 import '../../domain/entities/auth_mode.dart';
 import '../../domain/entities/signup_role.dart';
 import '../../domain/entities/signup_step.dart';
-import '../widgets/auth_brand_panel.dart';
 import '../widgets/auth_card_shell.dart';
+import '../widgets/auth_page_intro.dart';
 import '../widgets/login_form.dart';
 import '../widgets/signup_profile_step.dart';
 import '../widgets/signup_role_step.dart';
@@ -113,6 +112,43 @@ class _AuthScreenState extends State<AuthScreen> {
     _showPendingMessage('회원가입 연동은 다음 단계에서 연결됩니다.');
   }
 
+  String _heroModeLabel() {
+    if (_state.mode == AuthMode.login) {
+      return 'MODUS SIGN IN';
+    }
+    return 'MODUS SIGN UP';
+  }
+
+  String _heroTitle() {
+    if (_state.mode == AuthMode.login) {
+      return 'Welcome';
+    }
+
+    switch (_state.signupStep) {
+      case SignupStep.role:
+        return 'Create\nAccount';
+      case SignupStep.profile:
+        return 'Set Up\nProfile';
+      case SignupStep.verify:
+        return 'Verify\nEmail';
+    }
+  }
+
+  String _heroDescription() {
+    if (_state.mode == AuthMode.login) {
+      return '수업에 참여하거나 수업을 운영하려면 먼저 계정으로\n로그인하세요.';
+    }
+
+    switch (_state.signupStep) {
+      case SignupStep.role:
+        return '수강생 또는 교강사 역할을 먼저 선택해\n회원가입 흐름을 시작하세요.';
+      case SignupStep.profile:
+        return '프로필과 로그인 정보를 입력해\n이메일 인증 단계로 이동하세요.';
+      case SignupStep.verify:
+        return '전송된 인증번호를 입력하면\n회원가입 준비가 마무리됩니다.';
+    }
+  }
+
   Widget _buildActiveForm() {
     if (_state.mode == AuthMode.login) {
       return LoginForm(
@@ -187,85 +223,26 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F7FE),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final ResponsiveSize screenSize = ResponsiveLayout.resolve(
-              constraints.maxWidth,
-            );
-            final bool isCompact = screenSize != ResponsiveSize.desktop;
-            final double outerPadding = screenSize == ResponsiveSize.mobile
-                ? 16
-                : 24;
-            final double compactBrandHeight =
-                screenSize == ResponsiveSize.mobile ? 250 : 320;
-            final double compactGap = screenSize == ResponsiveSize.mobile
-                ? 16
-                : 20;
-
-            final Widget reactiveBrandPanel = Expanded(
-              child: AuthBrandPanel(mode: _state.mode),
-            );
-
-            final Widget cardPanel = Expanded(
-              child: Align(
-                alignment: Alignment.center,
-                child: AuthCardShell(child: _buildActiveForm()),
-              ),
-            );
-
-            final List<Widget> desktopChildren = _state.mode == AuthMode.login
-                ? <Widget>[
-                    reactiveBrandPanel,
-                    const SizedBox(width: 28),
-                    cardPanel,
-                  ]
-                : <Widget>[
-                    cardPanel,
-                    const SizedBox(width: 28),
-                    reactiveBrandPanel,
-                  ];
-
-            if (isCompact) {
-              return SingleChildScrollView(
-                padding: EdgeInsets.all(outerPadding),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: screenSize == ResponsiveSize.mobile ? 560 : 760,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          height: compactBrandHeight,
-                          child: AuthBrandPanel(
-                            mode: _state.mode,
-                            isCompact: true,
-                          ),
-                        ),
-                        SizedBox(height: compactGap),
-                        AuthCardShell(child: _buildActiveForm()),
-                      ],
-                    ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 620),
+              child: Column(
+                children: [
+                  AuthPageIntro(
+                    modeLabel: _heroModeLabel(),
+                    title: _heroTitle(),
+                    description: _heroDescription(),
                   ),
-                ),
-              );
-            }
-
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1360),
-                child: Padding(
-                  padding: EdgeInsets.all(outerPadding),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: desktopChildren,
-                  ),
-                ),
+                  const SizedBox(height: 32),
+                  AuthCardShell(child: _buildActiveForm()),
+                ],
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );

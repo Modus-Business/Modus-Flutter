@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../component/layout/responsive_layout.dart';
 import '../../../../component/theme/app_colors.dart';
 import '../../domain/entities/signup_role.dart';
+import 'auth_section_badge.dart';
 
 class SignupRoleStep extends StatelessWidget {
   const SignupRoleStep({
@@ -20,16 +20,20 @@ class SignupRoleStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final bool isMobile = ResponsiveLayout.of(context) == ResponsiveSize.mobile;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('회원가입', style: theme.textTheme.headlineMedium),
-        const SizedBox(height: 8),
-        Text('1 / 3 단계 · 역할 선택', style: theme.textTheme.bodyMedium),
-        SizedBox(height: isMobile ? 22 : 26),
+        const AuthSectionBadge(label: 'SIGN UP'),
+        const SizedBox(height: 18),
+        const Text(
+          '1 / 3 단계 · 역할 선택',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF7B88A8),
+          ),
+        ),
+        const SizedBox(height: 22),
         ...SignupRole.values.map(
           (SignupRole role) => Padding(
             padding: const EdgeInsets.only(bottom: 14),
@@ -40,25 +44,44 @@ class SignupRoleStep extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 10),
-        ElevatedButton(
-          onPressed: selectedRole != null ? onContinue : null,
-          child: const Text('다음'),
-        ),
-        const SizedBox(height: 20),
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 4,
-          runSpacing: 2,
-          children: [
-            Text(
-              '이미 계정이 있으신가요?',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppColors.primaryInk.withValues(alpha: 0.72),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: selectedRole != null ? onContinue : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6281F0),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
               ),
             ),
-            TextButton(onPressed: onSwitchToLogin, child: const Text('로그인하기')),
-          ],
+            child: const Text('다음'),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Center(
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 4,
+            runSpacing: 2,
+            children: [
+              const Text(
+                '이미 계정이 있으신가요?',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1F2743),
+                ),
+              ),
+              TextButton(
+                onPressed: onSwitchToLogin,
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF1F2743),
+                ),
+                child: const Text('로그인하기'),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -78,19 +101,19 @@ class _RoleOptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isMobile = ResponsiveLayout.of(context) == ResponsiveSize.mobile;
-
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(24),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: EdgeInsets.all(isMobile ? 18 : 20),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF5F8FF) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          color: isSelected ? const Color(0xFFF1F5FF) : const Color(0xFFF7F9FF),
+          borderRadius: BorderRadius.circular(26),
           border: Border.all(
-            color: isSelected ? AppColors.primaryInk : AppColors.border,
+            color: isSelected
+                ? const Color(0xFF6C84F1)
+                : const Color(0xFFE1E7F4),
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -102,18 +125,18 @@ class _RoleOptionCard extends StatelessWidget {
                 children: [
                   Text(
                     role.label,
-                    style: TextStyle(
-                      fontSize: isMobile ? 16 : 18,
+                    style: const TextStyle(
+                      fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.primaryInk,
+                      color: Color(0xFF1F2743),
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     role.description,
-                    style: TextStyle(
-                      fontSize: isMobile ? 13 : 14,
-                      color: AppColors.mutedText,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF8F9BB7),
                       height: 1.5,
                     ),
                   ),
@@ -122,7 +145,7 @@ class _RoleOptionCard extends StatelessWidget {
             ),
             Icon(
               isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: isSelected ? AppColors.primaryInk : AppColors.mutedText,
+              color: isSelected ? const Color(0xFF6C84F1) : AppColors.mutedText,
             ),
           ],
         ),
