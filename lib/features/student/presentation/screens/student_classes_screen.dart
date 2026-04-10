@@ -32,6 +32,7 @@ class StudentClassesScreen extends StatelessWidget {
       onSettingsTap: onSettingsTap,
       onLogoutTap: onLogoutTap,
       appBarTitle: const SizedBox.shrink(),
+      showProfileAvatar: false,
       onPrimaryActionTap: () async {
         final bool? joined = await showDialog<bool>(
           context: context,
@@ -113,24 +114,28 @@ class _DateChip extends StatelessWidget {
         color: const Color(0xFFF1F5FF),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.calendar_today_outlined,
-            size: 18,
-            color: Color(0xFF728BFF),
-          ),
-          SizedBox(width: 8),
-          Text(
-            '오늘: 2026. 04. 09. (목)',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
+      child: const FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.calendar_today_outlined,
+              size: 18,
               color: Color(0xFF728BFF),
             ),
-          ),
-        ],
+            SizedBox(width: 8),
+            Text(
+              '오늘: 2026. 04. 09. (목)',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF728BFF),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

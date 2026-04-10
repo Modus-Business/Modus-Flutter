@@ -68,7 +68,6 @@ class GroupChatPanel extends StatelessWidget {
                         ),
                         child: _ChatBubble(
                           message: message,
-                          color: _bubbleAccentColor(index),
                           onEdit: onEdit,
                           onDelete: onDelete,
                         ),
@@ -152,124 +151,116 @@ class GroupChatPanel extends StatelessWidget {
       ),
     );
   }
-
-  Color _bubbleAccentColor(int index) {
-    const List<Color> palette = [
-      Color(0xFFDDF7E7),
-      Color(0xFFFBE5D7),
-      Color(0xFFE4ECFF),
-      Color(0xFFEADFFF),
-    ];
-
-    return palette[index % palette.length];
-  }
 }
 
 class _ChatBubble extends StatelessWidget {
   const _ChatBubble({
     required this.message,
-    required this.color,
     required this.onEdit,
     required this.onDelete,
   });
 
   final StudentChatMessage message;
-  final Color color;
   final ValueChanged<StudentChatMessage> onEdit;
   final ValueChanged<StudentChatMessage> onDelete;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: message.isMine
-          ? MainAxisAlignment.end
-          : MainAxisAlignment.start,
+    final double panelWidth = MediaQuery.sizeOf(context).width;
+    // 모바일에서도 말풍선이 과하게 넓어지지 않도록 화면 비율 기준으로 맞춥니다.
+    final double bubbleMaxWidth = message.isMine
+        ? panelWidth * 0.7
+        : panelWidth * 0.76;
+
+    return Column(
+      crossAxisAlignment: message.isMine
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
-        if (!message.isMine) ...[
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(colors: [color, Colors.white]),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: message.isMine
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.start,
+          children: [
+            Text(
+              '${message.author}  ${message.sentAt}',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF7F8CAB),
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-        ],
-        Flexible(
+            if (message.isMine) ...[
+              const SizedBox(width: 6),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x123E5BA5),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.fromBorderSide(
+                    BorderSide(color: Color(0xFFD5DDF1)),
+                  ),
+                ),
+                child: PopupMenuButton<String>(
+                  onSelected: (String value) {
+                    if (value == 'edit') {
+                      onEdit(message);
+                    } else if (value == 'delete') {
+                      onDelete(message);
+                    }
+                  },
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(
+                    Icons.more_horiz_rounded,
+                    color: Color(0xFF7B88A8),
+                    size: 22,
+                  ),
+                  itemBuilder: (BuildContext context) => const [
+                    PopupMenuItem<String>(value: 'edit', child: Text('수정')),
+                    PopupMenuItem<String>(value: 'delete', child: Text('삭제')),
+                    PopupMenuItem<String>(value: 'cancel', child: Text('취소')),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: bubbleMaxWidth),
           child: Container(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+            padding: const EdgeInsets.fromLTRB(22, 18, 22, 20),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFD9E1F3)),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: const Color(0xFFD5DDF1)),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x0B43589B),
-                  blurRadius: 16,
-                  offset: Offset(0, 8),
+                  color: Color(0x083E5BA5),
+                  blurRadius: 8,
+                  offset: Offset(0, 3),
                 ),
               ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${message.author}  ${message.sentAt}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF7D87A0),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  message.message,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    height: 1.7,
-                    color: Color(0xFF27334B),
-                  ),
-                ),
-              ],
+            child: Text(
+              message.message,
+              style: const TextStyle(
+                fontSize: 16,
+                height: 1.7,
+                color: Color(0xFF27334B),
+              ),
             ),
           ),
         ),
-        if (message.isMine) ...[
-          const SizedBox(width: 10),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [Color(0xFFDCE6FF), Color(0xFFF4F7FF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: PopupMenuButton<String>(
-              onSelected: (String value) {
-                if (value == 'edit') {
-                  onEdit(message);
-                } else if (value == 'delete') {
-                  onDelete(message);
-                }
-              },
-              padding: EdgeInsets.zero,
-              icon: const Icon(
-                Icons.more_horiz_rounded,
-                color: Color(0xFF7B88A8),
-              ),
-              itemBuilder: (BuildContext context) => const [
-                PopupMenuItem<String>(value: 'edit', child: Text('수정')),
-                PopupMenuItem<String>(value: 'delete', child: Text('삭제')),
-                PopupMenuItem<String>(value: 'cancel', child: Text('취소')),
-              ],
-            ),
-          ),
-        ],
       ],
     );
   }

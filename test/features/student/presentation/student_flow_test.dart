@@ -33,4 +33,34 @@ void main() {
     expect(find.text('모두달리기42'), findsWidgets);
     expect(find.text('이메일 인증 완료'), findsOneWidget);
   });
+
+  testWidgets('학생 화면에서 로그아웃을 누르면 auth 화면으로 돌아간다', (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const MyApp(initialRoute: '/classes'));
+
+    await tester.tap(find.byIcon(Icons.menu_rounded).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('로그아웃'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Welcome'), findsOneWidget);
+    expect(find.text('SIGN IN'), findsOneWidget);
+  });
+
+  testWidgets('설정 화면에서 등록한 수업 메뉴를 누르면 목록으로 이동한다', (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const MyApp(initialRoute: '/settings'));
+
+    await tester.tap(find.byIcon(Icons.menu_rounded).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('등록한 수업'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('참여 중인 수업'), findsOneWidget);
+    expect(find.text('프로덕트 스튜디오'), findsOneWidget);
+  });
 }

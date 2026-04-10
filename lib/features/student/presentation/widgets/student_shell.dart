@@ -157,7 +157,10 @@ class _DrawerContent extends StatelessWidget {
           ),
           const Spacer(),
           OutlinedButton.icon(
-            onPressed: onLogoutTap,
+            onPressed: () {
+              Navigator.of(context).pop();
+              onLogoutTap();
+            },
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(52),
               shape: RoundedRectangleBorder(

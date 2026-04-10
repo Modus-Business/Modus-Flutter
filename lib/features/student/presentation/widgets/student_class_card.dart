@@ -37,8 +37,6 @@ class StudentClassCard extends StatelessWidget {
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF222C44),
-                    decoration: TextDecoration.underline,
-                    decorationThickness: 1.2,
                   ),
                 ),
               ),

@@ -25,6 +25,7 @@ class StudentSettingsScreen extends StatelessWidget {
       onClassesTap: onClassesTap,
       onSettingsTap: onSettingsTap,
       onLogoutTap: onLogoutTap,
+      showProfileAvatar: false,
       appBarTitle: const Text(
         '설정',
         maxLines: 1,

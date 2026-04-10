@@ -143,6 +143,7 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
       onClassesTap: widget.onClassesTap,
       onSettingsTap: widget.onSettingsTap,
       onLogoutTap: widget.onLogoutTap,
+      showProfileAvatar: false,
       appBarTitle: _DetailBreadcrumb(
         title: _studentClass.title,
         subtitle: _studentClass.groupAssigned

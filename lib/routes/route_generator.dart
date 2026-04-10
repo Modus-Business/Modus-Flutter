@@ -28,14 +28,14 @@ class RouteGenerator {
             return StudentClassesScreen(
               classes: _studentRepository.getClasses(),
               profile: profile,
-              onClassesTap: () {},
+              onClassesTap: () {
+                Navigator.of(context).pushReplacementNamed(AppRoutes.classes);
+              },
               onSettingsTap: () {
                 Navigator.of(context).pushReplacementNamed(AppRoutes.settings);
               },
               onLogoutTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('로그아웃 연동은 다음 단계에서 연결됩니다.')),
-                );
+                Navigator.of(context).pushReplacementNamed(AppRoutes.auth);
               },
               onClassTap: (String classId) {
                 Navigator.of(context).pushNamed('/class/$classId');
@@ -49,16 +49,16 @@ class RouteGenerator {
               return StudentClassesScreen(
                 classes: _studentRepository.getClasses(),
                 profile: profile,
-                onClassesTap: () {},
+                onClassesTap: () {
+                  Navigator.of(context).pushReplacementNamed(AppRoutes.classes);
+                },
                 onSettingsTap: () {
                   Navigator.of(
                     context,
                   ).pushReplacementNamed(AppRoutes.settings);
                 },
                 onLogoutTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('로그아웃 연동은 다음 단계에서 연결됩니다.')),
-                  );
+                  Navigator.of(context).pushReplacementNamed(AppRoutes.auth);
                 },
                 onClassTap: (String classId) {
                   Navigator.of(context).pushNamed('/class/$classId');
@@ -76,9 +76,7 @@ class RouteGenerator {
                 Navigator.of(context).pushReplacementNamed(AppRoutes.settings);
               },
               onLogoutTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('로그아웃 연동은 다음 단계에서 연결됩니다.')),
-                );
+                Navigator.of(context).pushReplacementNamed(AppRoutes.auth);
               },
             );
           case AppRouteKind.settings:
@@ -87,11 +85,11 @@ class RouteGenerator {
               onClassesTap: () {
                 Navigator.of(context).pushReplacementNamed(AppRoutes.classes);
               },
-              onSettingsTap: () {},
+              onSettingsTap: () {
+                Navigator.of(context).pushReplacementNamed(AppRoutes.settings);
+              },
               onLogoutTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('로그아웃 연동은 다음 단계에서 연결됩니다.')),
-                );
+                Navigator.of(context).pushReplacementNamed(AppRoutes.auth);
               },
             );
           case AppRouteKind.auth:

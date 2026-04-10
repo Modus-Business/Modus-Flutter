@@ -33,27 +33,27 @@ class GroupMembersCard extends StatelessWidget {
           InkWell(
             onTap: onToggle,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
               child: Row(
                 children: [
                   const Icon(
                     Icons.groups_2_outlined,
                     color: Color(0xFF6A80F2),
-                    size: 28,
+                    size: 24,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   const Text(
                     '모둠원',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF27334B),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Container(
-                    width: 42,
-                    height: 42,
+                    width: 36,
+                    height: 36,
                     alignment: Alignment.center,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
@@ -62,7 +62,7 @@ class GroupMembersCard extends StatelessWidget {
                     child: Text(
                       '$memberCount',
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF7D87A0),
                       ),
@@ -74,7 +74,7 @@ class GroupMembersCard extends StatelessWidget {
                         ? Icons.keyboard_arrow_up_rounded
                         : Icons.keyboard_arrow_down_rounded,
                     color: const Color(0xFF7D87A0),
-                    size: 28,
+                    size: 24,
                   ),
                 ],
               ),
@@ -98,27 +98,22 @@ class GroupMembersCard extends StatelessWidget {
             ...List<Widget>.generate(group!.members.length, (int index) {
               final String member = group!.members[index];
               return Container(
-                height: 110,
-                padding: const EdgeInsets.symmetric(horizontal: 18),
+                height: 88,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 decoration: const BoxDecoration(
                   border: Border(bottom: BorderSide(color: Color(0xFFD9E1F3))),
                   color: Color(0xFFF9FBFF),
                 ),
-                child: Row(
-                  children: [
-                    _AvatarCircle(color: _memberColor(index)),
-                    const SizedBox(width: 18),
-                    Expanded(
-                      child: Text(
-                        member,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF27334B),
-                        ),
-                      ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    member,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF27334B),
                     ),
-                  ],
+                  ),
                 ),
               );
             }),
@@ -170,39 +165,6 @@ class GroupMembersCard extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  Color _memberColor(int index) {
-    const List<Color> colors = [
-      Color(0xFFDCE6FF),
-      Color(0xFFDFF7E8),
-      Color(0xFFFBE4D7),
-      Color(0xFFE5DBFF),
-    ];
-
-    return colors[index % colors.length];
-  }
-}
-
-class _AvatarCircle extends StatelessWidget {
-  const _AvatarCircle({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 72,
-      height: 72,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [color, Colors.white],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
       ),
     );
   }
