@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../component/layout/responsive_layout.dart';
 import '../../domain/entities/signup_role.dart';
 import 'auth_section_badge.dart';
 import 'auth_text_field.dart';
@@ -29,22 +28,20 @@ class SignupVerifyStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isMobile = ResponsiveLayout.of(context) == ResponsiveSize.mobile;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AuthSectionBadge(label: 'SIGN UP'),
-        const SizedBox(height: 18),
-        const Text(
-          '3 / 3 단계 · 이메일 인증',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF7B88A8),
+        const SizedBox(height: 22),
+        Text(
+          '${role.label} 계정 인증',
+          style: const TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF1F2743),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
@@ -71,64 +68,36 @@ class SignupVerifyStep extends StatelessWidget {
           onChanged: onCodeChanged,
         ),
         const SizedBox(height: 24),
-        if (isMobile) ...[
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: onReset,
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFE1E7F4)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(22),
-                ),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: canComplete ? onComplete : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6281F0),
+              minimumSize: const Size.fromHeight(58),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
               ),
-              child: const Text('처음부터 다시'),
             ),
+            child: const Text('회원가입'),
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: canComplete ? onComplete : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6281F0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(22),
-                ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: onReset,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF1F2743),
+              side: const BorderSide(color: Color(0xFFE1E7F4)),
+              minimumSize: const Size.fromHeight(58),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
               ),
-              child: const Text('회원가입'),
             ),
+            child: const Text('처음부터 다시'),
           ),
-        ] else
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onReset,
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFE1E7F4)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(22),
-                    ),
-                  ),
-                  child: const Text('처음부터 다시'),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: canComplete ? onComplete : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6281F0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(22),
-                    ),
-                  ),
-                  child: const Text('회원가입'),
-                ),
-              ),
-            ],
-          ),
+        ),
         const SizedBox(height: 20),
         Center(
           child: Wrap(

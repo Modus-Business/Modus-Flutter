@@ -35,7 +35,11 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   void initState() {
     super.initState();
-    _state = widget.initialState;
+    _state =
+        widget.initialState.mode == AuthMode.signup &&
+            widget.initialState.signupRole == null
+        ? widget.initialState.copyWith(signupRole: SignupRole.student)
+        : widget.initialState;
     _loginEmailController = TextEditingController(text: _state.loginEmail);
     _loginPasswordController = TextEditingController(
       text: _state.loginPassword,
@@ -76,7 +80,12 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _switchMode(AuthMode mode) {
-    _updateState(_state.switchMode(mode));
+    final AuthFormState nextState = _state.switchMode(mode);
+    _updateState(
+      mode == AuthMode.signup
+          ? nextState.copyWith(signupRole: SignupRole.student)
+          : nextState,
+    );
     _syncUrl();
   }
 
@@ -95,8 +104,27 @@ class _AuthScreenState extends State<AuthScreen> {
     _signupPasswordConfirmController.clear();
     _verificationCodeController.clear();
 
-    _updateState(_state.copyWith(mode: AuthMode.signup).resetSignupFlow());
+    _updateState(
+      _state
+          .copyWith(mode: AuthMode.signup, signupRole: SignupRole.student)
+          .resetSignupFlow()
+          .copyWith(signupRole: SignupRole.student),
+    );
     _syncUrl();
+  }
+
+  Future<void> _confirmResetSignupFlow() async {
+    final bool? shouldReset = await showDialog<bool>(
+      context: context,
+      barrierColor: const Color(0x80A9B5D3),
+      builder: (BuildContext dialogContext) {
+        return const _ResetSignupDialog();
+      },
+    );
+
+    if (shouldReset == true && mounted) {
+      _resetSignupFlow();
+    }
   }
 
   void _showPendingMessage(String message) {
@@ -124,30 +152,14 @@ class _AuthScreenState extends State<AuthScreen> {
     if (_state.mode == AuthMode.login) {
       return 'Welcome';
     }
-
-    switch (_state.signupStep) {
-      case SignupStep.role:
-        return 'Create\nAccount';
-      case SignupStep.profile:
-        return 'Set Up\nProfile';
-      case SignupStep.verify:
-        return 'Verify\nEmail';
-    }
+    return 'Join with us';
   }
 
   String _heroDescription() {
     if (_state.mode == AuthMode.login) {
       return '수업에 참여하거나 수업을 운영하려면 먼저 계정으로\n로그인하세요.';
     }
-
-    switch (_state.signupStep) {
-      case SignupStep.role:
-        return '수강생 또는 교강사 역할을 먼저 선택해\n회원가입 흐름을 시작하세요.';
-      case SignupStep.profile:
-        return '프로필과 로그인 정보를 입력해\n이메일 인증 단계로 이동하세요.';
-      case SignupStep.verify:
-        return '전송된 인증번호를 입력하면\n회원가입 준비가 마무리됩니다.';
-    }
+    return '계정을 만들고 바로 수업 참여 또는 수업 운영을 시작할 수 있습니다.';
   }
 
   Widget _buildActiveForm() {
@@ -203,6 +215,9 @@ class _AuthScreenState extends State<AuthScreen> {
           onContinue: () {
             _updateState(_state.copyWith(signupStep: SignupStep.verify));
           },
+          onChangeRole: () {
+            _updateState(_state.copyWith(signupStep: SignupStep.role));
+          },
           onSwitchToLogin: () => _switchMode(AuthMode.login),
         );
       case SignupStep.verify:
@@ -214,7 +229,7 @@ class _AuthScreenState extends State<AuthScreen> {
           onCodeChanged: (String value) {
             _updateState(_state.copyWith(verificationCode: value));
           },
-          onReset: _resetSignupFlow,
+          onReset: _confirmResetSignupFlow,
           onComplete: _handleSignupComplete,
           onSwitchToLogin: () => _switchMode(AuthMode.login),
         );
@@ -244,6 +259,110 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ResetSignupDialog extends StatelessWidget {
+  const _ResetSignupDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 18),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 420),
+        padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x213B4B8E),
+              blurRadius: 34,
+              offset: Offset(0, 22),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    '회원가입을 처음부터 다시 시작할까요?',
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      height: 1.4,
+                      color: Color(0xFF1F2743),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Color(0xFF7B88A8),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              '지금까지 입력한 역할과 회원가입 정보가 모두 초기화됩니다. 계속하려면 다시 입력해야 합니다.',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                height: 1.8,
+                color: Color(0xFF8D98B5),
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6281F0),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  minimumSize: const Size.fromHeight(58),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: const Text(
+                  '처음부터 다시',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF1F2743),
+                  side: const BorderSide(color: Color(0xFFE1E7F4)),
+                  minimumSize: const Size.fromHeight(58),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: const Text(
+                  '계속 작성',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

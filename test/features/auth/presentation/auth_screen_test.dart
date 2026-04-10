@@ -30,7 +30,8 @@ void main() {
     await tester.tap(find.text('다음'));
     await tester.pumpAndSettle();
 
-    expect(find.text('2 / 3 단계 · 프로필 입력'), findsOneWidget);
+    expect(find.text('수강생 계정'), findsOneWidget);
+    expect(find.text('역할 변경'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField).at(0), '홍길동');
     await tester.enterText(find.byType(TextField).at(1), 'student@modus.app');
@@ -42,13 +43,42 @@ void main() {
     await tester.tap(find.text('이메일 인증으로 계속'));
     await tester.pumpAndSettle();
 
-    expect(find.text('3 / 3 단계 · 이메일 인증'), findsOneWidget);
+    expect(find.text('수강생 계정 인증'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField).first, '123456');
     await tester.pumpAndSettle();
 
-    expect(find.text('3 / 3 단계 · 이메일 인증'), findsOneWidget);
+    expect(find.text('수강생 계정 인증'), findsOneWidget);
     expect(find.text('처음부터 다시'), findsOneWidget);
+  });
+
+  testWidgets('회원가입 초기화 버튼을 누르면 확인 모달이 열린다', (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const MyApp(initialRoute: '/signup'));
+
+    await tester.tap(find.text('수강생'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('다음'));
+    await tester.tap(find.text('다음'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(0), '홍길동');
+    await tester.enterText(find.byType(TextField).at(1), 'student@modus.app');
+    await tester.enterText(find.byType(TextField).at(2), 'password123');
+    await tester.enterText(find.byType(TextField).at(3), 'password123');
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('이메일 인증으로 계속'));
+    await tester.tap(find.text('이메일 인증으로 계속'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('처음부터 다시'));
+    await tester.tap(find.text('처음부터 다시'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('회원가입을 처음부터 다시 시작할까요?'), findsOneWidget);
+    expect(find.text('계속 작성'), findsOneWidget);
   });
 
   testWidgets('회원가입 중 로그인하기를 누르면 로그인 화면으로 복귀한다', (WidgetTester tester) async {

@@ -5,9 +5,9 @@ void main() {
   testWidgets('/signup 진입 시 회원가입 역할 선택이 열린다', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp(initialRoute: '/signup'));
 
-    expect(find.text('1 / 3 단계 · 역할 선택'), findsOneWidget);
     expect(find.text('수강생'), findsOneWidget);
-    expect(find.text('교강사'), findsOneWidget);
+    expect(find.text('교강사'), findsNothing);
+    expect(find.text('다음'), findsOneWidget);
   });
 
   testWidgets('/classes 진입 시 학생 수업 목록이 열린다', (WidgetTester tester) async {

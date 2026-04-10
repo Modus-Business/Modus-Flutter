@@ -19,6 +19,7 @@ class SignupProfileStep extends StatelessWidget {
     required this.onPasswordChanged,
     required this.onPasswordConfirmChanged,
     required this.onContinue,
+    required this.onChangeRole,
     required this.onSwitchToLogin,
   });
 
@@ -34,6 +35,7 @@ class SignupProfileStep extends StatelessWidget {
   final ValueChanged<String> onPasswordChanged;
   final ValueChanged<String> onPasswordConfirmChanged;
   final VoidCallback onContinue;
+  final VoidCallback onChangeRole;
   final VoidCallback onSwitchToLogin;
 
   @override
@@ -42,33 +44,32 @@ class SignupProfileStep extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AuthSectionBadge(label: 'SIGN UP'),
-        const SizedBox(height: 18),
-        const Text(
-          '2 / 3 단계 · 프로필 입력',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF7B88A8),
+        const SizedBox(height: 22),
+        Text(
+          '${role.label} 계정',
+          style: const TextStyle(
+            fontSize: 30,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF1F2743),
           ),
         ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE6ECFF),
-            borderRadius: BorderRadius.circular(999),
+        const SizedBox(height: 12),
+        TextButton.icon(
+          onPressed: onChangeRole,
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFF8A96B1),
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: Text(
-            '선택한 역할: ${role.label}',
-            style: const TextStyle(
-              color: Color(0xFF4865D6),
-              fontWeight: FontWeight.w700,
-            ),
+          icon: const Icon(Icons.chevron_left_rounded, size: 18),
+          label: const Text(
+            '역할 변경',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         AuthTextField(
-          label: '본명',
           hintText: '본명을 입력하세요',
           controller: fullNameController,
           icon: Icons.person_outline_rounded,
@@ -118,8 +119,9 @@ class SignupProfileStep extends StatelessWidget {
             onPressed: canContinue ? onContinue : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6281F0),
+              minimumSize: const Size.fromHeight(58),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
             child: const Text('이메일 인증으로 계속'),

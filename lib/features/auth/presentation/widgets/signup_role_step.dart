@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../component/theme/app_colors.dart';
 import '../../domain/entities/signup_role.dart';
 import 'auth_section_badge.dart';
 
@@ -24,35 +23,22 @@ class SignupRoleStep extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AuthSectionBadge(label: 'SIGN UP'),
-        const SizedBox(height: 18),
-        const Text(
-          '1 / 3 단계 · 역할 선택',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF7B88A8),
-          ),
-        ),
         const SizedBox(height: 22),
-        ...SignupRole.values.map(
-          (SignupRole role) => Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: _RoleOptionCard(
-              role: role,
-              isSelected: selectedRole == role,
-              onTap: () => onSelectRole(role),
-            ),
-          ),
+        _RoleOptionCard(
+          role: SignupRole.student,
+          isSelected: selectedRole == SignupRole.student,
+          onTap: () => onSelectRole(SignupRole.student),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: selectedRole != null ? onContinue : null,
+            onPressed: selectedRole == SignupRole.student ? onContinue : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6281F0),
+              minimumSize: const Size.fromHeight(58),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
             child: const Text('다음'),
@@ -106,10 +92,10 @@ class _RoleOptionCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(24),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF1F5FF) : const Color(0xFFF7F9FF),
-          borderRadius: BorderRadius.circular(26),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
           border: Border.all(
             color: isSelected
                 ? const Color(0xFF6C84F1)
@@ -117,35 +103,41 @@ class _RoleOptionCard extends StatelessWidget {
             width: isSelected ? 1.5 : 1,
           ),
         ),
-        child: Row(
+        child: Column(
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    role.label,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1F2743),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    role.description,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF8F9BB7),
-                      height: 1.5,
-                    ),
-                  ),
-                ],
+            Container(
+              width: 118,
+              height: 118,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFFF0F4FF),
+              ),
+              child: Icon(
+                Icons.school_outlined,
+                size: 54,
+                color: isSelected
+                    ? const Color(0xFF6281F0)
+                    : const Color(0xFF8190BA),
               ),
             ),
-            Icon(
-              isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: isSelected ? const Color(0xFF6C84F1) : AppColors.mutedText,
+            const SizedBox(height: 24),
+            Text(
+              role.label,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1F2743),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              '수업에 참여하고 모둠 활동을 진행할 계정을 만듭니다.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 15,
+                color: Color(0xFF8F9BB7),
+                height: 1.8,
+              ),
             ),
           ],
         ),
