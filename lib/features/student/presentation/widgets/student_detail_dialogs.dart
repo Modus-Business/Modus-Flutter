@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/student_class.dart';
+import '../../domain/entities/student_upload_file.dart';
 
 class AssignmentListDialog extends StatelessWidget {
   const AssignmentListDialog({super.key, required this.assignments});
@@ -79,7 +80,10 @@ class AnnouncementListDialog extends StatelessWidget {
 }
 
 class SubmissionDialog extends StatefulWidget {
-  const SubmissionDialog({super.key});
+  const SubmissionDialog({super.key, this.onCreateUploadUrl});
+
+  final Future<StudentPresignedUpload> Function(StudentUploadFile file)?
+  onCreateUploadUrl;
 
   @override
   State<SubmissionDialog> createState() => _SubmissionDialogState();
@@ -87,7 +91,9 @@ class SubmissionDialog extends StatefulWidget {
 
 class _SubmissionDialogState extends State<SubmissionDialog> {
   final TextEditingController _linkController = TextEditingController();
-  bool _attachMockFile = false;
+  StudentUploadFile? _selectedFile;
+  StudentPresignedUpload? _presignedUpload;
+  bool _isRequestingUploadUrl = false;
 
   @override
   void dispose() {
@@ -97,8 +103,10 @@ class _SubmissionDialogState extends State<SubmissionDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final bool hasSelectedFile = _selectedFile != null;
     final bool canSubmit =
-        _attachMockFile || _linkController.text.trim().isNotEmpty;
+        (hasSelectedFile && !_isRequestingUploadUrl) ||
+        _linkController.text.trim().isNotEmpty;
 
     return _SheetDialog(
       title: '과제 제출',
@@ -109,24 +117,38 @@ class _SubmissionDialogState extends State<SubmissionDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _DialogButton(
-              label: _attachMockFile ? '파일 선택됨' : '파일 업로드',
+              label: _isRequestingUploadUrl
+                  ? '업로드 URL 발급 중'
+                  : hasSelectedFile
+                  ? '파일 선택됨'
+                  : '파일 업로드',
               isFilled: false,
               icon: Icons.attach_file_rounded,
-              onTap: () {
-                setState(() {
-                  _attachMockFile = !_attachMockFile;
-                });
-              },
+              onTap: _isRequestingUploadUrl ? null : _handleFileUploadTap,
             ),
-            if (_attachMockFile) ...[
+            if (hasSelectedFile) ...[
               const SizedBox(height: 10),
-              const Text(
-                '업로드 대기 파일: product-notes.pdf',
+              Text(
+                '업로드 대기 파일: ${_selectedFile!.fileName}',
                 style: TextStyle(
                   color: Color(0xFF7D87A0),
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              if (_presignedUpload != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  _presignedUpload!.uploadUrl == null
+                      ? '업로드 URL 발급 완료'
+                      : '업로드 URL 발급 완료: ${_presignedUpload!.uploadUrl}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF5D76E8),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ],
             const SizedBox(height: 16),
             TextField(
@@ -169,6 +191,51 @@ class _SubmissionDialogState extends State<SubmissionDialog> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleFileUploadTap() async {
+    const StudentUploadFile file = StudentUploadFile(
+      fileName: 'product-notes.pdf',
+      contentType: 'application/pdf',
+    );
+
+    setState(() {
+      _selectedFile = file;
+      _presignedUpload = null;
+      _isRequestingUploadUrl = true;
+    });
+
+    try {
+      final StudentPresignedUpload? presignedUpload =
+          widget.onCreateUploadUrl == null
+          ? null
+          : await widget.onCreateUploadUrl!(file);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _presignedUpload = presignedUpload;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('파일 업로드 URL 발급에 실패했습니다.')));
+      setState(() {
+        _selectedFile = null;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRequestingUploadUrl = false;
+        });
+      }
+    }
   }
 }
 

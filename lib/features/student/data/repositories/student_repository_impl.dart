@@ -1,5 +1,6 @@
 import '../../domain/entities/student_class.dart';
 import '../../domain/entities/student_profile.dart';
+import '../../domain/entities/student_upload_file.dart';
 import '../../domain/repositories/student_repository.dart';
 import '../../domain/repositories/student_repository_registry.dart';
 import '../datasources/student_remote_data_source.dart';
@@ -240,6 +241,41 @@ class StudentRepositoryImpl implements StudentRepository {
   }
 
   @override
+  Future<StudentPresignedUpload> createPresignedUploadUrl(
+    StudentUploadFile file,
+  ) async {
+    if (remoteDataSource == null) {
+      throw const StudentRemoteException('파일 업로드 URL API가 연결되지 않았습니다.');
+    }
+
+    final Map<String, dynamic> data = await remoteDataSource!
+        .createPresignedUploadUrl(
+          fileName: file.fileName,
+          contentType: file.contentType,
+          purpose: file.purpose,
+        );
+
+    return StudentPresignedUpload(
+      fileName: file.fileName,
+      contentType: file.contentType,
+      purpose: file.purpose,
+      rawData: data,
+      uploadUrl: _firstString(data, const <String>[
+        'uploadUrl',
+        'presignedUrl',
+        'url',
+        'signedUrl',
+      ]),
+      fileUrl: _firstString(data, const <String>[
+        'fileUrl',
+        'publicUrl',
+        'downloadUrl',
+        'objectUrl',
+      ]),
+    );
+  }
+
+  @override
   List<StudentClass> getClasses() {
     return List<StudentClass>.from(_cachedClasses);
   }
@@ -384,6 +420,18 @@ class StudentRepositoryImpl implements StudentRepository {
     }
 
     return isoDate.trim().split('T').first;
+  }
+
+  String? _firstString(Map<String, dynamic> json, List<String> keys) {
+    for (final String key in keys) {
+      final dynamic value = json[key];
+
+      if (value is String && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+
+    return null;
   }
 
   StudentProfile _mapRemoteProfile(Map<String, dynamic> json) {

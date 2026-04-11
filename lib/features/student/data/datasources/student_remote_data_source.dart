@@ -22,6 +22,12 @@ abstract class StudentRemoteDataSource {
 
   Future<List<Map<String, dynamic>>> fetchGroupNotices(String groupId);
 
+  Future<Map<String, dynamic>> createPresignedUploadUrl({
+    required String fileName,
+    required String contentType,
+    required String purpose,
+  });
+
   Future<Map<String, dynamic>> fetchSettings();
 }
 
@@ -162,6 +168,27 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
   }
 
   @override
+  Future<Map<String, dynamic>> createPresignedUploadUrl({
+    required String fileName,
+    required String contentType,
+    required String purpose,
+  }) async {
+    final Uri endpoint = _buildUri('/storage/presigned-upload-url');
+
+    return _postData(
+      endpoint: endpoint,
+      body: <String, dynamic>{
+        'fileName': fileName.trim(),
+        'contentType': contentType.trim(),
+        'purpose': purpose.trim(),
+      },
+      successStatusCode: 201,
+      failureMessage: '파일 업로드 URL을 발급받지 못했습니다. 잠시 후 다시 시도해주세요.',
+      formatMessage: '파일 업로드 URL 응답 형식을 확인할 수 없습니다.',
+    );
+  }
+
+  @override
   Future<Map<String, dynamic>> fetchSettings() async {
     final Uri endpoint = _buildUri('/me/settings');
 
@@ -200,6 +227,53 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
           jsonDecode(response.body) as Map<String, dynamic>;
 
       return decoded['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    } on http.ClientException catch (error) {
+      debugPrint('[Student API] EXCEPTION $error');
+      throw const StudentRemoteException('네트워크 연결을 확인한 뒤 다시 시도해주세요.');
+    } on FormatException catch (error) {
+      debugPrint('[Student API] EXCEPTION $error');
+      throw StudentRemoteException(formatMessage);
+    }
+  }
+
+  Future<Map<String, dynamic>> _postData({
+    required Uri endpoint,
+    required Map<String, dynamic> body,
+    required int successStatusCode,
+    required String failureMessage,
+    required String formatMessage,
+  }) async {
+    final String encodedBody = jsonEncode(body);
+
+    try {
+      debugPrint('[Student API] REQUEST POST $endpoint');
+      debugPrint('[Student API] Body: $encodedBody');
+
+      final http.Response response = await _client.post(
+        endpoint,
+        headers: _headers(hasBody: true),
+        body: encodedBody,
+      );
+
+      debugPrint(
+        '[Student API] RESPONSE ${response.statusCode} ${response.request?.url ?? ''}',
+      );
+      debugPrint(
+        '[Student API] Response Body: ${response.body.isEmpty ? '(empty)' : response.body}',
+      );
+
+      if (response.statusCode != successStatusCode) {
+        throw StudentRemoteException(failureMessage);
+      }
+
+      if (response.body.trim().isEmpty) {
+        return <String, dynamic>{};
+      }
+
+      final Map<String, dynamic> decoded =
+          jsonDecode(response.body) as Map<String, dynamic>;
+
+      return decoded['data'] as Map<String, dynamic>? ?? decoded;
     } on http.ClientException catch (error) {
       debugPrint('[Student API] EXCEPTION $error');
       throw const StudentRemoteException('네트워크 연결을 확인한 뒤 다시 시도해주세요.');

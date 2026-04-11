@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/student_class.dart';
 import '../../domain/entities/student_profile.dart';
+import '../../domain/entities/student_upload_file.dart';
 import '../../domain/repositories/student_repository.dart';
 import '../../domain/repositories/student_repository_registry.dart';
 import '../widgets/group_chat_panel.dart';
@@ -117,7 +118,18 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
   Future<void> _showSubmissionDialog() async {
     final bool? submitted = await showDialog<bool>(
       context: context,
-      builder: (_) => const SubmissionDialog(),
+      builder: (_) => SubmissionDialog(
+        onCreateUploadUrl: (StudentUploadFile file) async {
+          final StudentRepository? repository =
+              StudentRepositoryRegistry.repository;
+
+          if (repository == null) {
+            throw StateError('학생 저장소가 연결되지 않았습니다.');
+          }
+
+          return repository.createPresignedUploadUrl(file);
+        },
+      ),
     );
 
     if (submitted == true && mounted) {
