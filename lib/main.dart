@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
 import 'component/theme/app_theme.dart';
+import 'core/config/app_env.dart';
 import 'routes/app_routes.dart';
 import 'routes/route_generator.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await AppEnv.load();
   runApp(const MyApp());
 }
 
