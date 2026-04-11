@@ -21,6 +21,8 @@ class SignupProfileStep extends StatelessWidget {
     required this.onContinue,
     required this.onChangeRole,
     required this.onSwitchToLogin,
+    this.isSubmitting = false,
+    this.errorMessage,
   });
 
   final SignupRole role;
@@ -30,6 +32,8 @@ class SignupProfileStep extends StatelessWidget {
   final TextEditingController passwordConfirmController;
   final bool canContinue;
   final bool passwordsMatch;
+  final bool isSubmitting;
+  final String? errorMessage;
   final ValueChanged<String> onFullNameChanged;
   final ValueChanged<String> onEmailChanged;
   final ValueChanged<String> onPasswordChanged;
@@ -73,6 +77,7 @@ class SignupProfileStep extends StatelessWidget {
           hintText: '본명을 입력하세요',
           controller: fullNameController,
           icon: Icons.person_outline_rounded,
+          enabled: !isSubmitting,
           onChanged: onFullNameChanged,
         ),
         const SizedBox(height: 16),
@@ -81,6 +86,7 @@ class SignupProfileStep extends StatelessWidget {
           hintText: '이메일을 입력하세요',
           controller: emailController,
           icon: Icons.email_outlined,
+          enabled: !isSubmitting,
           keyboardType: TextInputType.emailAddress,
           onChanged: onEmailChanged,
         ),
@@ -90,6 +96,7 @@ class SignupProfileStep extends StatelessWidget {
           hintText: '비밀번호를 입력하세요',
           controller: passwordController,
           icon: Icons.lock_outline_rounded,
+          enabled: !isSubmitting,
           obscureText: true,
           onChanged: onPasswordChanged,
         ),
@@ -99,6 +106,7 @@ class SignupProfileStep extends StatelessWidget {
           hintText: '비밀번호를 다시 입력하세요',
           controller: passwordConfirmController,
           icon: Icons.lock_person_outlined,
+          enabled: !isSubmitting,
           obscureText: true,
           onChanged: onPasswordConfirmChanged,
         ),
@@ -112,11 +120,21 @@ class SignupProfileStep extends StatelessWidget {
             ),
           ),
         ],
+        if (errorMessage != null) ...[
+          const SizedBox(height: 10),
+          Text(
+            errorMessage!,
+            style: const TextStyle(
+              color: Color(0xFFD14D4D),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
         const SizedBox(height: 22),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: canContinue ? onContinue : null,
+            onPressed: canContinue && !isSubmitting ? onContinue : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6281F0),
               minimumSize: const Size.fromHeight(58),
@@ -124,7 +142,16 @@ class SignupProfileStep extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
-            child: const Text('이메일 인증으로 계속'),
+            child: isSubmitting
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text('이메일 인증으로 계속'),
           ),
         ),
         const SizedBox(height: 24),
@@ -143,7 +170,7 @@ class SignupProfileStep extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: onSwitchToLogin,
+                onPressed: isSubmitting ? null : onSwitchToLogin,
                 style: TextButton.styleFrom(
                   foregroundColor: const Color(0xFF1F2743),
                 ),

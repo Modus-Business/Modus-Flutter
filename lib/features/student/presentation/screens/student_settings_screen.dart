@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../../component/theme/app_colors.dart';
 import '../../domain/entities/student_profile.dart';
+import '../../domain/repositories/student_repository.dart';
+import '../../domain/repositories/student_repository_registry.dart';
 import '../widgets/student_shell.dart';
 
-class StudentSettingsScreen extends StatelessWidget {
+class StudentSettingsScreen extends StatefulWidget {
   const StudentSettingsScreen({
     super.key,
     required this.profile,
@@ -19,12 +21,44 @@ class StudentSettingsScreen extends StatelessWidget {
   final VoidCallback onLogoutTap;
 
   @override
+  State<StudentSettingsScreen> createState() => _StudentSettingsScreenState();
+}
+
+class _StudentSettingsScreenState extends State<StudentSettingsScreen> {
+  late StudentProfile _profile;
+
+  @override
+  void initState() {
+    super.initState();
+    _profile = widget.profile;
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final StudentRepository? repository = StudentRepositoryRegistry.repository;
+
+    if (repository == null) {
+      return;
+    }
+
+    final StudentProfile profile = await repository.fetchProfile();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _profile = profile;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StudentShell(
       selectedItem: StudentNavItem.settings,
-      onClassesTap: onClassesTap,
-      onSettingsTap: onSettingsTap,
-      onLogoutTap: onLogoutTap,
+      onClassesTap: widget.onClassesTap,
+      onSettingsTap: widget.onSettingsTap,
+      onLogoutTap: widget.onLogoutTap,
       showProfileAvatar: false,
       appBarTitle: const Text(
         '설정',
@@ -46,11 +80,11 @@ class StudentSettingsScreen extends StatelessWidget {
                 _SettingsCard(
                   title: '프로필 정보',
                   children: [
-                    _SettingsRow(label: '본명', value: profile.name),
-                    _SettingsRow(label: '역할', value: profile.roleLabel),
+                    _SettingsRow(label: '본명', value: _profile.name),
+                    _SettingsRow(label: '역할', value: _profile.roleLabel),
                     _SettingsRow(
                       label: '교강사만 보기',
-                      value: profile.teacherOnlyVisibility,
+                      value: _profile.teacherOnlyVisibility,
                     ),
                   ],
                 ),
@@ -58,10 +92,10 @@ class StudentSettingsScreen extends StatelessWidget {
                 _SettingsCard(
                   title: '인증 상태',
                   children: [
-                    _SettingsRow(label: '이메일', value: profile.email),
+                    _SettingsRow(label: '이메일', value: _profile.email),
                     _SettingsRow(
                       label: '상태',
-                      value: profile.isEmailVerified ? '이메일 인증 완료' : '인증 대기',
+                      value: _profile.isEmailVerified ? '이메일 인증 완료' : '인증 대기',
                     ),
                   ],
                 ),

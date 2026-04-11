@@ -4,8 +4,16 @@ import '../../../../core/platform/web_url_sync.dart';
 import '../../../../routes/app_routes.dart';
 import '../../domain/entities/auth_form_state.dart';
 import '../../domain/entities/auth_mode.dart';
+import '../../domain/entities/login_params.dart';
+import '../../domain/entities/send_signup_verification_params.dart';
+import '../../domain/entities/signup_params.dart';
 import '../../domain/entities/signup_role.dart';
 import '../../domain/entities/signup_step.dart';
+import '../../domain/failures/auth_failure.dart';
+import '../../domain/usecases/login_use_case.dart';
+import '../../domain/usecases/send_email_verification_use_case.dart';
+import '../../domain/usecases/signup_use_case.dart';
+import '../../domain/usecases/verify_email_code_use_case.dart';
 import '../widgets/auth_card_shell.dart';
 import '../widgets/auth_page_intro.dart';
 import '../widgets/login_form.dart';
@@ -14,9 +22,20 @@ import '../widgets/signup_role_step.dart';
 import '../widgets/signup_verify_step.dart';
 
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key, required this.initialState});
+  const AuthScreen({
+    super.key,
+    required this.initialState,
+    required this.loginUseCase,
+    required this.signupUseCase,
+    required this.sendEmailVerificationUseCase,
+    required this.verifyEmailCodeUseCase,
+  });
 
   final AuthFormState initialState;
+  final LoginUseCase loginUseCase;
+  final SignupUseCase signupUseCase;
+  final SendEmailVerificationUseCase sendEmailVerificationUseCase;
+  final VerifyEmailCodeUseCase verifyEmailCodeUseCase;
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -24,6 +43,9 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   late AuthFormState _state;
+  late final LoginUseCase _loginUseCase;
+  late final SignupUseCase _signupUseCase;
+  late final SendEmailVerificationUseCase _sendEmailVerificationUseCase;
   late final TextEditingController _loginEmailController;
   late final TextEditingController _loginPasswordController;
   late final TextEditingController _fullNameController;
@@ -31,6 +53,11 @@ class _AuthScreenState extends State<AuthScreen> {
   late final TextEditingController _signupPasswordController;
   late final TextEditingController _signupPasswordConfirmController;
   late final TextEditingController _verificationCodeController;
+  bool _isSubmittingLogin = false;
+  String? _loginErrorMessage;
+  bool _isSendingVerification = false;
+  bool _isSubmittingSignup = false;
+  String? _signupErrorMessage;
 
   @override
   void initState() {
@@ -40,6 +67,9 @@ class _AuthScreenState extends State<AuthScreen> {
             widget.initialState.signupRole == null
         ? widget.initialState.copyWith(signupRole: SignupRole.student)
         : widget.initialState;
+    _loginUseCase = widget.loginUseCase;
+    _signupUseCase = widget.signupUseCase;
+    _sendEmailVerificationUseCase = widget.sendEmailVerificationUseCase;
     _loginEmailController = TextEditingController(text: _state.loginEmail);
     _loginPasswordController = TextEditingController(
       text: _state.loginPassword,
@@ -79,7 +109,29 @@ class _AuthScreenState extends State<AuthScreen> {
     });
   }
 
+  void _clearLoginError() {
+    if (_loginErrorMessage == null) {
+      return;
+    }
+
+    setState(() {
+      _loginErrorMessage = null;
+    });
+  }
+
+  void _clearSignupError() {
+    if (_signupErrorMessage == null) {
+      return;
+    }
+
+    setState(() {
+      _signupErrorMessage = null;
+    });
+  }
+
   void _switchMode(AuthMode mode) {
+    _clearLoginError();
+    _clearSignupError();
     final AuthFormState nextState = _state.switchMode(mode);
     _updateState(
       mode == AuthMode.signup
@@ -110,6 +162,7 @@ class _AuthScreenState extends State<AuthScreen> {
           .resetSignupFlow()
           .copyWith(signupRole: SignupRole.student),
     );
+    _clearSignupError();
     _syncUrl();
   }
 
@@ -133,12 +186,162 @@ class _AuthScreenState extends State<AuthScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _handleLoginSubmit() {
-    Navigator.of(context).pushReplacementNamed(AppRoutes.classes);
+  Future<void> _handleLoginSubmit() async {
+    if (!_state.canSubmitLogin || _isSubmittingLogin) {
+      return;
+    }
+
+    setState(() {
+      _isSubmittingLogin = true;
+      _loginErrorMessage = null;
+    });
+
+    try {
+      await _loginUseCase(
+        LoginParams(email: _state.loginEmail, password: _state.loginPassword),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.of(context).pushReplacementNamed(AppRoutes.classes);
+    } on AuthFailure catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _loginErrorMessage = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _loginErrorMessage = '로그인 처리 중 문제가 발생했습니다. 다시 시도해주세요.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmittingLogin = false;
+        });
+      }
+    }
   }
 
-  void _handleSignupComplete() {
-    _showPendingMessage('회원가입 연동은 다음 단계에서 연결됩니다.');
+  Future<void> _handleSignupComplete() async {
+    if (!_state.canCompleteSignup || _isSubmittingSignup) {
+      return;
+    }
+
+    setState(() {
+      _isSubmittingSignup = true;
+      _signupErrorMessage = null;
+    });
+
+    try {
+      await _signupUseCase(
+        SignupParams(
+          name: _state.fullName,
+          email: _state.signupEmail,
+          verificationCode: _state.verificationCode,
+          role: _state.signupRole!,
+          password: _state.signupPassword,
+          passwordConfirmation: _state.signupPasswordConfirm,
+        ),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      final String signupEmail = _state.signupEmail;
+      _fullNameController.clear();
+      _signupEmailController.clear();
+      _signupPasswordController.clear();
+      _signupPasswordConfirmController.clear();
+      _verificationCodeController.clear();
+      _loginPasswordController.clear();
+
+      _updateState(
+        AuthFormState.initial(
+          mode: AuthMode.login,
+        ).copyWith(loginEmail: signupEmail),
+      );
+      _showPendingMessage('회원가입이 완료되었습니다. 로그인해 주세요.');
+      _syncUrl();
+    } on AuthFailure catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _signupErrorMessage = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _signupErrorMessage = '회원가입 처리 중 문제가 발생했습니다. 다시 시도해주세요.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmittingSignup = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleSignupContinue() async {
+    if (!_state.canContinueProfile || _isSendingVerification) {
+      return;
+    }
+
+    setState(() {
+      _isSendingVerification = true;
+      _signupErrorMessage = null;
+    });
+
+    try {
+      // 인증번호 발송이 성공한 뒤에만 다음 단계를 열어 서버 상태와 화면 흐름을 맞춥니다.
+      await _sendEmailVerificationUseCase(
+        SendSignupVerificationParams(email: _state.signupEmail),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      _showPendingMessage('인증번호를 전송했습니다. 이메일을 확인해 주세요.');
+      _updateState(_state.copyWith(signupStep: SignupStep.verify));
+    } on AuthFailure catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _signupErrorMessage = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _signupErrorMessage = '인증번호 발송 중 문제가 발생했습니다. 다시 시도해주세요.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSendingVerification = false;
+        });
+      }
+    }
   }
 
   String _heroModeLabel() {
@@ -168,10 +371,14 @@ class _AuthScreenState extends State<AuthScreen> {
         emailController: _loginEmailController,
         passwordController: _loginPasswordController,
         canSubmit: _state.canSubmitLogin,
+        isSubmitting: _isSubmittingLogin,
+        errorMessage: _loginErrorMessage,
         onEmailChanged: (String value) {
+          _clearLoginError();
           _updateState(_state.copyWith(loginEmail: value));
         },
         onPasswordChanged: (String value) {
+          _clearLoginError();
           _updateState(_state.copyWith(loginPassword: value));
         },
         onSubmit: _handleLoginSubmit,
@@ -200,21 +407,25 @@ class _AuthScreenState extends State<AuthScreen> {
           passwordConfirmController: _signupPasswordConfirmController,
           canContinue: _state.canContinueProfile,
           passwordsMatch: _state.signupPassword == _state.signupPasswordConfirm,
+          isSubmitting: _isSendingVerification,
+          errorMessage: _signupErrorMessage,
           onFullNameChanged: (String value) {
+            _clearSignupError();
             _updateState(_state.copyWith(fullName: value));
           },
           onEmailChanged: (String value) {
+            _clearSignupError();
             _updateState(_state.copyWith(signupEmail: value));
           },
           onPasswordChanged: (String value) {
+            _clearSignupError();
             _updateState(_state.copyWith(signupPassword: value));
           },
           onPasswordConfirmChanged: (String value) {
+            _clearSignupError();
             _updateState(_state.copyWith(signupPasswordConfirm: value));
           },
-          onContinue: () {
-            _updateState(_state.copyWith(signupStep: SignupStep.verify));
-          },
+          onContinue: _handleSignupContinue,
           onChangeRole: () {
             _updateState(_state.copyWith(signupStep: SignupStep.role));
           },
@@ -226,7 +437,10 @@ class _AuthScreenState extends State<AuthScreen> {
           email: _state.signupEmail,
           codeController: _verificationCodeController,
           canComplete: _state.canCompleteSignup,
+          isSubmitting: _isSubmittingSignup,
+          errorMessage: _signupErrorMessage,
           onCodeChanged: (String value) {
+            _clearSignupError();
             _updateState(_state.copyWith(verificationCode: value));
           },
           onReset: _confirmResetSignupFlow,

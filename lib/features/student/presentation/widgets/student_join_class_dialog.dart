@@ -53,7 +53,7 @@ class _StudentJoinClassDialogState extends State<StudentJoinClassDialog> {
                   ),
                 ),
                 IconButton(
-                  onPressed: () => Navigator.of(context).pop(false),
+                  onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(
                     Icons.close_rounded,
                     color: Color(0xFF7A86A3),
@@ -149,7 +149,9 @@ class _StudentJoinClassDialogState extends State<StudentJoinClassDialog> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: canSubmit
-                    ? () => Navigator.of(context).pop(true)
+                    ? () => Navigator.of(
+                        context,
+                      ).pop(_classCodeController.text.trim())
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6780F0),
@@ -165,7 +167,7 @@ class _StudentJoinClassDialogState extends State<StudentJoinClassDialog> {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () => Navigator.of(context).pop(false),
+                onPressed: () => Navigator.of(context).pop(),
                 style: OutlinedButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(999),

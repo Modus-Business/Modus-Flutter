@@ -10,6 +10,7 @@ class AuthTextField extends StatelessWidget {
     required this.icon,
     this.label,
     this.obscureText = false,
+    this.enabled = true,
     this.keyboardType,
     this.onChanged,
   });
@@ -19,6 +20,7 @@ class AuthTextField extends StatelessWidget {
   final IconData icon;
   final String? label;
   final bool obscureText;
+  final bool enabled;
   final TextInputType? keyboardType;
   final ValueChanged<String>? onChanged;
 
@@ -41,6 +43,7 @@ class AuthTextField extends StatelessWidget {
         TextField(
           controller: controller,
           obscureText: obscureText,
+          enabled: enabled,
           keyboardType: keyboardType,
           onChanged: onChanged,
           decoration: InputDecoration(

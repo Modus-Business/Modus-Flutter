@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'component/theme/app_theme.dart';
-import 'core/config/app_env.dart';
+import 'core/session/auth_session.dart';
 import 'routes/app_routes.dart';
 import 'routes/route_generator.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppEnv.load();
+  await dotenv.load(fileName: ".env");
+  await AuthSession.initialize();
   runApp(const MyApp());
 }
 

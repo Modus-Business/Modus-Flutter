@@ -15,12 +15,16 @@ class SignupVerifyStep extends StatelessWidget {
     required this.onReset,
     required this.onComplete,
     required this.onSwitchToLogin,
+    this.isSubmitting = false,
+    this.errorMessage,
   });
 
   final SignupRole role;
   final String email;
   final TextEditingController codeController;
   final bool canComplete;
+  final bool isSubmitting;
+  final String? errorMessage;
   final ValueChanged<String> onCodeChanged;
   final VoidCallback onReset;
   final VoidCallback onComplete;
@@ -64,14 +68,26 @@ class SignupVerifyStep extends StatelessWidget {
           hintText: '6자리 인증번호',
           controller: codeController,
           icon: Icons.verified_user_outlined,
+          enabled: !isSubmitting,
           keyboardType: TextInputType.number,
           onChanged: onCodeChanged,
         ),
+        if (errorMessage != null) ...[
+          const SizedBox(height: 14),
+          Text(
+            errorMessage!,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFFD14D4D),
+            ),
+          ),
+        ],
         const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: canComplete ? onComplete : null,
+            onPressed: canComplete && !isSubmitting ? onComplete : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6281F0),
               minimumSize: const Size.fromHeight(58),
@@ -79,14 +95,23 @@ class SignupVerifyStep extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
-            child: const Text('회원가입'),
+            child: isSubmitting
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text('회원가입'),
           ),
         ),
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
           child: OutlinedButton(
-            onPressed: onReset,
+            onPressed: isSubmitting ? null : onReset,
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF1F2743),
               side: const BorderSide(color: Color(0xFFE1E7F4)),
@@ -114,7 +139,7 @@ class SignupVerifyStep extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: onSwitchToLogin,
+                onPressed: isSubmitting ? null : onSwitchToLogin,
                 style: TextButton.styleFrom(
                   foregroundColor: const Color(0xFF1F2743),
                 ),

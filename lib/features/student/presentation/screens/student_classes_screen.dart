@@ -15,6 +15,7 @@ class StudentClassesScreen extends StatelessWidget {
     required this.onSettingsTap,
     required this.onLogoutTap,
     required this.onClassTap,
+    required this.onJoinClass,
   });
 
   final List<StudentClass> classes;
@@ -23,6 +24,7 @@ class StudentClassesScreen extends StatelessWidget {
   final VoidCallback onSettingsTap;
   final VoidCallback onLogoutTap;
   final ValueChanged<String> onClassTap;
+  final Future<bool> Function(String classCode) onJoinClass;
 
   @override
   Widget build(BuildContext context) {
@@ -34,15 +36,25 @@ class StudentClassesScreen extends StatelessWidget {
       appBarTitle: const SizedBox.shrink(),
       showProfileAvatar: false,
       onPrimaryActionTap: () async {
-        final bool? joined = await showDialog<bool>(
+        final String? classCode = await showDialog<String>(
           context: context,
           barrierColor: const Color(0x66C5D0F2),
           builder: (_) => const StudentJoinClassDialog(),
         );
 
-        if (joined == true && context.mounted) {
+        if (classCode == null || classCode.trim().isEmpty || !context.mounted) {
+          return;
+        }
+
+        final bool joined = await onJoinClass(classCode);
+
+        if (joined && context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('수업에 참여했습니다.')));
+        } else if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('수업 참여 연동은 다음 단계에서 연결됩니다.')),
+            const SnackBar(content: Text('수업 참여에 실패했습니다. 수업 코드를 확인해주세요.')),
           );
         }
       },
