@@ -58,7 +58,31 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
     );
   }
 
-  void _showAnnouncements() {
+  Future<void> _showAnnouncements() async {
+    final StudentRepository? repository = StudentRepositoryRegistry.repository;
+    final String? groupId = _studentClass.group?.id;
+
+    if (repository != null && groupId != null && groupId.isNotEmpty) {
+      try {
+        final List<StudentAnnouncement> announcements = await repository
+            .fetchGroupNotices(groupId);
+
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _studentClass = _studentClass.copyWith(announcements: announcements);
+        });
+      } catch (_) {
+        // 공지 조회 실패 시 기존 공지 목록을 그대로 보여줍니다.
+      }
+    }
+
+    if (!mounted) {
+      return;
+    }
+
     showDialog<void>(
       context: context,
       builder: (_) =>

@@ -20,6 +20,8 @@ abstract class StudentRemoteDataSource {
 
   Future<Map<String, dynamic>> fetchGroupDetail(String groupId);
 
+  Future<List<Map<String, dynamic>>> fetchGroupNotices(String groupId);
+
   Future<Map<String, dynamic>> fetchSettings();
 }
 
@@ -138,6 +140,25 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
       failureMessage: '모둠 상세 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
       formatMessage: '모둠 상세 정보 응답 형식을 확인할 수 없습니다.',
     );
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchGroupNotices(String groupId) async {
+    final Uri endpoint = _buildUri(
+      '/notices/group/${Uri.encodeComponent(groupId)}',
+    );
+    final Map<String, dynamic> data = await _getData(
+      endpoint: endpoint,
+      failureMessage: '공지 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+      formatMessage: '공지 목록 응답 형식을 확인할 수 없습니다.',
+    );
+    final List<dynamic> notices =
+        data['notices'] as List<dynamic>? ?? <dynamic>[];
+
+    return notices
+        .whereType<Map<String, dynamic>>()
+        .map((Map<String, dynamic> item) => item)
+        .toList();
   }
 
   @override

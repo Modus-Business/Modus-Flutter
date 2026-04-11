@@ -8,6 +8,8 @@ abstract class StudentRepository {
 
   Future<StudentClass> fetchClassGroup(String classId);
 
+  Future<List<StudentAnnouncement>> fetchGroupNotices(String groupId);
+
   Future<StudentProfile> fetchProfile();
 
   List<StudentClass> getClasses();

@@ -225,6 +225,21 @@ class StudentRepositoryImpl implements StudentRepository {
   }
 
   @override
+  Future<List<StudentAnnouncement>> fetchGroupNotices(String groupId) async {
+    if (remoteDataSource == null) {
+      return const <StudentAnnouncement>[];
+    }
+
+    final List<Map<String, dynamic>> remoteNotices = await remoteDataSource!
+        .fetchGroupNotices(groupId);
+
+    return remoteNotices
+        .map(_mapRemoteAnnouncement)
+        .whereType<StudentAnnouncement>()
+        .toList();
+  }
+
+  @override
   List<StudentClass> getClasses() {
     return List<StudentClass>.from(_cachedClasses);
   }
@@ -341,6 +356,34 @@ class StudentRepositoryImpl implements StudentRepository {
       members: members,
       classCode: fallbackClassCode,
     );
+  }
+
+  StudentAnnouncement? _mapRemoteAnnouncement(Map<String, dynamic> json) {
+    final String? noticeId = (json['noticeId'] as String?)?.trim();
+    final String? title = (json['title'] as String?)?.trim();
+    final String? content = (json['content'] as String?)?.trim();
+
+    if (noticeId == null ||
+        noticeId.isEmpty ||
+        title == null ||
+        title.isEmpty) {
+      return null;
+    }
+
+    return StudentAnnouncement(
+      id: noticeId,
+      title: title,
+      summary: content != null && content.isNotEmpty ? content : '공지 내용이 없습니다.',
+      dateLabel: _dateLabel(json['createdAt'] as String?),
+    );
+  }
+
+  String _dateLabel(String? isoDate) {
+    if (isoDate == null || isoDate.trim().isEmpty) {
+      return '날짜 미정';
+    }
+
+    return isoDate.trim().split('T').first;
   }
 
   StudentProfile _mapRemoteProfile(Map<String, dynamic> json) {
