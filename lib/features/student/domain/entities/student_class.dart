@@ -77,11 +77,13 @@ class StudentChatMessage {
 
 class StudentGroup {
   const StudentGroup({
+    this.id,
     required this.name,
     required this.members,
     required this.classCode,
   });
 
+  final String? id;
   final String name;
   final List<String> members;
   final String classCode;
@@ -112,17 +114,19 @@ class StudentClass {
   final List<StudentChatMessage> chatMessages;
   final StudentGroup? group;
 
+  static const Object _unset = Object();
+
   StudentClass copyWith({
     String? id,
     String? title,
     String? description,
     String? classCode,
     bool? groupAssigned,
-    String? groupName,
+    Object? groupName = _unset,
     List<StudentAssignment>? assignments,
     List<StudentAnnouncement>? announcements,
     List<StudentChatMessage>? chatMessages,
-    StudentGroup? group,
+    Object? group = _unset,
   }) {
     return StudentClass(
       id: id ?? this.id,
@@ -130,11 +134,11 @@ class StudentClass {
       description: description ?? this.description,
       classCode: classCode ?? this.classCode,
       groupAssigned: groupAssigned ?? this.groupAssigned,
-      groupName: groupName ?? this.groupName,
+      groupName: groupName == _unset ? this.groupName : groupName as String?,
       assignments: assignments ?? this.assignments,
       announcements: announcements ?? this.announcements,
       chatMessages: chatMessages ?? this.chatMessages,
-      group: group ?? this.group,
+      group: group == _unset ? this.group : group as StudentGroup?,
     );
   }
 }

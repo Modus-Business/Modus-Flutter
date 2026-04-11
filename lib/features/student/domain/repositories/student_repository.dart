@@ -6,6 +6,8 @@ abstract class StudentRepository {
 
   Future<StudentClass> joinClass(String classCode);
 
+  Future<StudentClass> fetchClassGroup(String classId);
+
   Future<StudentProfile> fetchProfile();
 
   List<StudentClass> getClasses();

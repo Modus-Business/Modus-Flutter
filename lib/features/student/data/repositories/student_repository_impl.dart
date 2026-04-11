@@ -89,6 +89,7 @@ class StudentRepositoryImpl implements StudentRepository {
         ),
       ],
       group: StudentGroup(
+        id: 'group-1',
         name: '모둠 3 · 스프린트',
         members: ['모두달리기42', '청설모코더', '야행성토끼', '노트북바람'],
         classCode: 'MODUS-7J2Q',
@@ -172,6 +173,58 @@ class StudentRepositoryImpl implements StudentRepository {
   }
 
   @override
+  Future<StudentClass> fetchClassGroup(String classId) async {
+    final StudentClass? currentClass = getClassById(classId);
+
+    if (currentClass == null) {
+      throw const StudentRemoteException('수업 정보를 확인할 수 없습니다.');
+    }
+
+    if (remoteDataSource == null) {
+      return currentClass;
+    }
+
+    final Map<String, dynamic> myGroup = await remoteDataSource!.fetchMyGroup(
+      classId,
+    );
+    final bool hasGroup = myGroup['hasGroup'] as bool? ?? false;
+
+    if (!hasGroup) {
+      return _replaceCachedClass(
+        currentClass.copyWith(
+          groupAssigned: false,
+          groupName: null,
+          group: null,
+        ),
+      );
+    }
+
+    final Map<String, dynamic>? groupSummary =
+        myGroup['group'] as Map<String, dynamic>?;
+    final String? groupId = (groupSummary?['groupId'] as String?)?.trim();
+
+    if (groupId == null || groupId.isEmpty) {
+      throw const StudentRemoteException('내 모둠 식별자를 확인할 수 없습니다.');
+    }
+
+    final Map<String, dynamic> groupDetail = await remoteDataSource!
+        .fetchGroupDetail(groupId);
+    final StudentGroup group = _mapRemoteGroup(
+      groupDetail,
+      fallbackClassCode: currentClass.classCode,
+      fallbackName: groupSummary?['name'] as String?,
+    );
+
+    return _replaceCachedClass(
+      currentClass.copyWith(
+        groupAssigned: true,
+        groupName: group.name,
+        group: group,
+      ),
+    );
+  }
+
+  @override
   List<StudentClass> getClasses() {
     return List<StudentClass>.from(_cachedClasses);
   }
@@ -242,11 +295,51 @@ class StudentRepositoryImpl implements StudentRepository {
       chatMessages: const <StudentChatMessage>[],
       group: groupAssigned
           ? StudentGroup(
+              id: myGroup?['groupId'] as String?,
               name: resolvedGroupName,
               members: const <String>[],
               classCode: classCode,
             )
           : null,
+    );
+  }
+
+  StudentClass _replaceCachedClass(StudentClass studentClass) {
+    final int existingIndex = _cachedClasses.indexWhere(
+      (StudentClass item) => item.id == studentClass.id,
+    );
+
+    if (existingIndex >= 0) {
+      _cachedClasses[existingIndex] = studentClass;
+    }
+
+    return studentClass;
+  }
+
+  StudentGroup _mapRemoteGroup(
+    Map<String, dynamic> json, {
+    required String fallbackClassCode,
+    String? fallbackName,
+  }) {
+    final String? groupName = (json['name'] as String?)?.trim();
+    final List<dynamic> rawMembers =
+        json['members'] as List<dynamic>? ?? <dynamic>[];
+    final List<String> members = rawMembers
+        .whereType<Map<String, dynamic>>()
+        .map((Map<String, dynamic> member) {
+          return (member['displayName'] as String?)?.trim();
+        })
+        .whereType<String>()
+        .where((String displayName) => displayName.isNotEmpty)
+        .toList();
+
+    return StudentGroup(
+      id: json['groupId'] as String?,
+      name: groupName != null && groupName.isNotEmpty
+          ? groupName
+          : fallbackName ?? '내 모둠',
+      members: members,
+      classCode: fallbackClassCode,
     );
   }
 

@@ -16,6 +16,10 @@ abstract class StudentRemoteDataSource {
 
   Future<Map<String, dynamic>> joinClass(String classCode);
 
+  Future<Map<String, dynamic>> fetchMyGroup(String classId);
+
+  Future<Map<String, dynamic>> fetchGroupDetail(String groupId);
+
   Future<Map<String, dynamic>> fetchSettings();
 }
 
@@ -113,9 +117,45 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
   }
 
   @override
+  Future<Map<String, dynamic>> fetchMyGroup(String classId) async {
+    final Uri endpoint = _buildUri(
+      '/groups/my/${Uri.encodeComponent(classId)}',
+    );
+
+    return _getData(
+      endpoint: endpoint,
+      failureMessage: '내 모둠 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+      formatMessage: '내 모둠 정보 응답 형식을 확인할 수 없습니다.',
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> fetchGroupDetail(String groupId) async {
+    final Uri endpoint = _buildUri('/groups/${Uri.encodeComponent(groupId)}');
+
+    return _getData(
+      endpoint: endpoint,
+      failureMessage: '모둠 상세 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+      formatMessage: '모둠 상세 정보 응답 형식을 확인할 수 없습니다.',
+    );
+  }
+
+  @override
   Future<Map<String, dynamic>> fetchSettings() async {
     final Uri endpoint = _buildUri('/me/settings');
 
+    return _getData(
+      endpoint: endpoint,
+      failureMessage: '사용자 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+      formatMessage: '사용자 정보 응답 형식을 확인할 수 없습니다.',
+    );
+  }
+
+  Future<Map<String, dynamic>> _getData({
+    required Uri endpoint,
+    required String failureMessage,
+    required String formatMessage,
+  }) async {
     try {
       debugPrint('[Student API] REQUEST GET $endpoint');
 
@@ -132,9 +172,7 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
       );
 
       if (response.statusCode != 200) {
-        throw const StudentRemoteException(
-          '사용자 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
-        );
+        throw StudentRemoteException(failureMessage);
       }
 
       final Map<String, dynamic> decoded =
@@ -146,7 +184,7 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
       throw const StudentRemoteException('네트워크 연결을 확인한 뒤 다시 시도해주세요.');
     } on FormatException catch (error) {
       debugPrint('[Student API] EXCEPTION $error');
-      throw const StudentRemoteException('사용자 정보 응답 형식을 확인할 수 없습니다.');
+      throw StudentRemoteException(formatMessage);
     }
   }
 

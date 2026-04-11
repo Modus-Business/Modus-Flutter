@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/student_class.dart';
 import '../../domain/entities/student_profile.dart';
+import '../../domain/repositories/student_repository.dart';
+import '../../domain/repositories/student_repository_registry.dart';
 import '../widgets/group_chat_panel.dart';
 import '../widgets/group_members_card.dart';
 import '../widgets/student_detail_dialogs.dart';
@@ -39,6 +41,7 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
   void initState() {
     super.initState();
     _studentClass = widget.studentClass;
+    _loadGroup();
   }
 
   @override
@@ -61,6 +64,30 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
       builder: (_) =>
           AnnouncementListDialog(announcements: _studentClass.announcements),
     );
+  }
+
+  Future<void> _loadGroup() async {
+    final StudentRepository? repository = StudentRepositoryRegistry.repository;
+
+    if (repository == null) {
+      return;
+    }
+
+    try {
+      final StudentClass studentClass = await repository.fetchClassGroup(
+        _studentClass.id,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _studentClass = studentClass;
+      });
+    } catch (_) {
+      // 모둠 조회 실패 시 기존 상세 화면 상태를 유지합니다.
+    }
   }
 
   Future<void> _showSubmissionDialog() async {
