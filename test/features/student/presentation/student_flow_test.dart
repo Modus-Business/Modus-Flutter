@@ -61,6 +61,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('참여 중인 수업'), findsOneWidget);
-    expect(find.text('프로덕트 스튜디오'), findsOneWidget);
+    expect(find.text('프로덕트 스튜디오'), findsNothing);
   });
 }
