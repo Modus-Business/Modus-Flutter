@@ -15,6 +15,12 @@ abstract class StudentRepository {
     StudentUploadFile file,
   );
 
+  Future<StudentPresignedUpload> uploadAssignmentFile(StudentUploadFile file);
+
+  Future<void> submitAssignment(StudentSubmissionRequest request);
+
+  Future<StudentSubmission?> fetchMySubmission(String groupId);
+
   Future<StudentProfile> fetchProfile();
 
   List<StudentClass> getClasses();

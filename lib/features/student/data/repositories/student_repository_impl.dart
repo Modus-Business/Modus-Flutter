@@ -185,12 +185,9 @@ class StudentRepositoryImpl implements StudentRepository {
       return currentClass;
     }
 
-    final Map<String, dynamic> myGroup = await remoteDataSource!.fetchMyGroup(
-      classId,
-    );
-    final bool hasGroup = myGroup['hasGroup'] as bool? ?? false;
+    final String? groupId = currentClass.group?.id?.trim();
 
-    if (!hasGroup) {
+    if (groupId == null || groupId.isEmpty) {
       return _replaceCachedClass(
         currentClass.copyWith(
           groupAssigned: false,
@@ -200,20 +197,12 @@ class StudentRepositoryImpl implements StudentRepository {
       );
     }
 
-    final Map<String, dynamic>? groupSummary =
-        myGroup['group'] as Map<String, dynamic>?;
-    final String? groupId = (groupSummary?['groupId'] as String?)?.trim();
-
-    if (groupId == null || groupId.isEmpty) {
-      throw const StudentRemoteException('내 모둠 식별자를 확인할 수 없습니다.');
-    }
-
     final Map<String, dynamic> groupDetail = await remoteDataSource!
         .fetchGroupDetail(groupId);
     final StudentGroup group = _mapRemoteGroup(
       groupDetail,
       fallbackClassCode: currentClass.classCode,
-      fallbackName: groupSummary?['name'] as String?,
+      fallbackName: currentClass.groupName,
     );
 
     return _replaceCachedClass(
@@ -273,6 +262,71 @@ class StudentRepositoryImpl implements StudentRepository {
         'objectUrl',
       ]),
     );
+  }
+
+  @override
+  Future<StudentPresignedUpload> uploadAssignmentFile(
+    StudentUploadFile file,
+  ) async {
+    if (remoteDataSource == null) {
+      throw const StudentRemoteException('파일 업로드 API가 연결되지 않았습니다.');
+    }
+
+    if (file.bytes.isEmpty) {
+      throw const StudentRemoteException('업로드할 파일을 읽을 수 없습니다.');
+    }
+
+    final StudentPresignedUpload presignedUpload =
+        await createPresignedUploadUrl(file);
+    final String? uploadUrl = presignedUpload.uploadUrl?.trim();
+
+    if (uploadUrl == null || uploadUrl.isEmpty) {
+      throw const StudentRemoteException('파일 업로드 주소를 확인할 수 없습니다.');
+    }
+
+    await remoteDataSource!.uploadPresignedFile(
+      uploadUrl: uploadUrl,
+      contentType: file.contentType,
+      bytes: file.bytes,
+    );
+
+    return StudentPresignedUpload(
+      fileName: presignedUpload.fileName,
+      contentType: presignedUpload.contentType,
+      purpose: presignedUpload.purpose,
+      rawData: presignedUpload.rawData,
+      uploadUrl: presignedUpload.uploadUrl,
+      fileUrl: _uploadedFileUrl(presignedUpload),
+    );
+  }
+
+  @override
+  Future<void> submitAssignment(StudentSubmissionRequest request) async {
+    if (remoteDataSource == null) {
+      throw const StudentRemoteException('과제 제출 API가 연결되지 않았습니다.');
+    }
+
+    await remoteDataSource!.submitAssignment(
+      groupId: request.groupId,
+      fileUrl: request.fileUrl,
+      link: request.link,
+    );
+  }
+
+  @override
+  Future<StudentSubmission?> fetchMySubmission(String groupId) async {
+    if (remoteDataSource == null) {
+      return null;
+    }
+
+    final Map<String, dynamic>? data =
+        await remoteDataSource!.fetchMySubmission(groupId);
+
+    if (data == null) {
+      return null;
+    }
+
+    return _mapRemoteSubmission(data);
   }
 
   @override
@@ -434,6 +488,28 @@ class StudentRepositoryImpl implements StudentRepository {
     return null;
   }
 
+  String _uploadedFileUrl(StudentPresignedUpload presignedUpload) {
+    final String? fileUrl = presignedUpload.fileUrl?.trim();
+
+    if (fileUrl != null && fileUrl.isNotEmpty) {
+      return fileUrl;
+    }
+
+    final String? uploadUrl = presignedUpload.uploadUrl?.trim();
+
+    if (uploadUrl == null || uploadUrl.isEmpty) {
+      return '';
+    }
+
+    final Uri? uri = Uri.tryParse(uploadUrl);
+
+    if (uri == null) {
+      return uploadUrl;
+    }
+
+    return uri.replace(query: '', fragment: '').toString();
+  }
+
   StudentProfile _mapRemoteProfile(Map<String, dynamic> json) {
     final String? name = (json['name'] as String?)?.trim();
     final String? email = (json['email'] as String?)?.trim();
@@ -458,5 +534,17 @@ class StudentRepositoryImpl implements StudentRepository {
       default:
         return _cachedProfile.roleLabel;
     }
+  }
+
+  StudentSubmission _mapRemoteSubmission(Map<String, dynamic> json) {
+    return StudentSubmission(
+      submissionId: json['submissionId'] as String? ?? '',
+      groupId: json['groupId'] as String? ?? '',
+      fileUrl: json['fileUrl'] as String? ?? '',
+      link: json['link'] as String? ?? '',
+      submittedBy: json['submittedBy'] as String? ?? '',
+      submittedAt: _dateLabel(json['submittedAt'] as String?),
+      updatedAt: _dateLabel(json['updatedAt'] as String?),
+    );
   }
 }

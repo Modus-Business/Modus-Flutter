@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../data/services/chat_socket_service.dart';
 import '../../domain/entities/student_class.dart';
 import '../../domain/entities/student_profile.dart';
 import '../../domain/entities/student_upload_file.dart';
 import '../../domain/repositories/student_repository.dart';
 import '../../domain/repositories/student_repository_registry.dart';
+import '../notifiers/chat_notifier.dart';
 import '../widgets/group_chat_panel.dart';
 import '../widgets/group_members_card.dart';
 import '../widgets/student_detail_dialogs.dart';
@@ -38,16 +40,27 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
   bool _isMemberCardOpen = false;
   String? _editingMessageId;
 
+  // ChatNotifier: ChangeNotifier 기반 채팅 상태 관리
+  late final ChatNotifier _chatNotifier = ChatNotifier(
+    service: ChatSocketService.instance,
+  );
+
   @override
   void initState() {
     super.initState();
     _studentClass = widget.studentClass;
+    _chatNotifier.addListener(_onChatNotifierChanged);
     _loadGroup();
+    // 소켓 연결은 _loadGroup()에서 groupId 확보 후 시작
   }
 
   @override
   void dispose() {
+    _chatNotifier.removeListener(_onChatNotifierChanged);
     _draftController.dispose();
+    // 서버 스펙: 그룹 화면 이탈 시 disconnect
+    _chatNotifier.leaveGroup();
+    _chatNotifier.dispose();
     super.dispose();
   }
 
@@ -110,16 +123,46 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
       setState(() {
         _studentClass = studentClass;
       });
+
+      // 모둠 정보 로드 후 ChatNotifier를 통해 소켓 연결
+      final String? groupId = studentClass.group?.id;
+      if (groupId != null && groupId.isNotEmpty) {
+        _chatNotifier.connect(groupId);
+      }
     } catch (_) {
-      // 모둠 조회 실패 시 기존 상세 화면 상태를 유지합니다.
+      // 모둠 조회 실패 시 기존 상태를 유지합니다.
+    }
+  }
+
+  void _onChatNotifierChanged() {
+    final String? error = _chatNotifier.errorMessage;
+    if (error != null && mounted) {
+      // 프레임 빌드 완료 후 SnackBar를 띄워 레이아웃 충돌 방지
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error)));
+        _chatNotifier.clearError();
+      });
     }
   }
 
   Future<void> _showSubmissionDialog() async {
+    final String? groupId = _studentClass.group?.id;
+
+    if (groupId == null || groupId.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('모둠 배정 후 과제를 제출할 수 있습니다.')));
+      return;
+    }
+
     final bool? submitted = await showDialog<bool>(
       context: context,
       builder: (_) => SubmissionDialog(
-        onCreateUploadUrl: (StudentUploadFile file) async {
+        groupId: groupId,
+        onUploadFile: (StudentUploadFile file) async {
           final StudentRepository? repository =
               StudentRepositoryRegistry.repository;
 
@@ -127,7 +170,28 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
             throw StateError('학생 저장소가 연결되지 않았습니다.');
           }
 
-          return repository.createPresignedUploadUrl(file);
+          return repository.uploadAssignmentFile(file);
+        },
+        onSubmit: ({required String fileUrl, required String link}) async {
+          final StudentRepository? repository =
+              StudentRepositoryRegistry.repository;
+          final String? groupId = _studentClass.group?.id;
+
+          if (repository == null) {
+            throw StateError('학생 저장소가 연결되지 않았습니다.');
+          }
+
+          if (groupId == null || groupId.isEmpty) {
+            throw StateError('모둠 정보가 없어 과제를 제출할 수 없습니다.');
+          }
+
+          await repository.submitAssignment(
+            StudentSubmissionRequest(
+              groupId: groupId,
+              fileUrl: fileUrl,
+              link: link,
+            ),
+          );
         },
       ),
     );
@@ -135,49 +199,25 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
     if (submitted == true && mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('과제 제출 연동은 다음 단계에서 연결됩니다.')));
+      ).showSnackBar(const SnackBar(content: Text('과제를 제출했습니다.')));
+      // 제출 성공 후 데이터를 다시 로드하여 '내 제출물' 영역을 갱신합니다.
+      _loadGroup();
     }
   }
 
   void _handleSend() {
     final String draft = _draftController.text.trim();
-    if (draft.isEmpty) {
-      return;
-    }
+    if (draft.isEmpty) return;
 
-    setState(() {
-      // 저장 연동 전 단계라서 화면 상태만 로컬에서 갱신합니다.
-      if (_editingMessageId != null) {
-        _studentClass = _studentClass.copyWith(
-          chatMessages: _studentClass.chatMessages
-              .map(
-                (StudentChatMessage message) => message.id == _editingMessageId
-                    ? message.copyWith(message: draft, sentAt: '방금 전')
-                    : message,
-              )
-              .toList(),
-        );
-      } else {
-        _studentClass = _studentClass.copyWith(
-          chatMessages: [
-            ..._studentClass.chatMessages,
-            StudentChatMessage(
-              id: 'm${DateTime.now().millisecondsSinceEpoch}',
-              author: '나',
-              message: draft,
-              sentAt: '방금 전',
-              isMine: true,
-            ),
-          ],
-        );
-      }
+    _draftController.clear();
+    setState(() {}); // 전송 버튼 비활성화 즉시 반영
 
-      _editingMessageId = null;
-      _draftController.clear();
-    });
+    // ChatNotifier를 통해 전송 (chat.send에 content만 포함 - 서버 스펙)
+    _chatNotifier.sendMessage(draft);
   }
 
   void _handleEdit(StudentChatMessage message) {
+    // TODO: 서버가 메시지 수정 이벤트를 지원하면 소켓으로 연동
     setState(() {
       _editingMessageId = message.id;
       _draftController.text = message.message;
@@ -185,6 +225,7 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
   }
 
   void _handleDelete(StudentChatMessage message) {
+    // TODO: 서버가 메시지 삭제 이벤트를 지원하면 소켓으로 연동
     setState(() {
       _studentClass = _studentClass.copyWith(
         chatMessages: _studentClass.chatMessages
@@ -216,17 +257,20 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
       body: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool useTwoColumns = constraints.maxWidth >= 980;
-          final Widget chatArea = GroupChatPanel(
-            groupAssigned: _studentClass.groupAssigned,
-            messages: _studentClass.chatMessages,
-            controller: _draftController,
-            editingMessageId: _editingMessageId,
-            onChanged: (_) {
-              setState(() {});
+          final Widget chatArea = ListenableBuilder(
+            listenable: _chatNotifier,
+            builder: (BuildContext ctx, _) {
+              return GroupChatPanel(
+                groupAssigned: _studentClass.groupAssigned,
+                messages: _chatNotifier.messages,
+                controller: _draftController,
+                editingMessageId: _editingMessageId,
+                onChanged: (_) => setState(() {}),
+                onSend: _handleSend,
+                onEdit: _handleEdit,
+                onDelete: _handleDelete,
+              );
             },
-            onSend: _handleSend,
-            onEdit: _handleEdit,
-            onDelete: _handleDelete,
           );
           final Widget membersArea = GroupMembersCard(
             groupAssigned: _studentClass.groupAssigned,

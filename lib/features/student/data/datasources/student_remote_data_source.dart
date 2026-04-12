@@ -16,8 +16,6 @@ abstract class StudentRemoteDataSource {
 
   Future<Map<String, dynamic>> joinClass(String classCode);
 
-  Future<Map<String, dynamic>> fetchMyGroup(String classId);
-
   Future<Map<String, dynamic>> fetchGroupDetail(String groupId);
 
   Future<List<Map<String, dynamic>>> fetchGroupNotices(String groupId);
@@ -27,6 +25,20 @@ abstract class StudentRemoteDataSource {
     required String contentType,
     required String purpose,
   });
+
+  Future<void> uploadPresignedFile({
+    required String uploadUrl,
+    required String contentType,
+    required Uint8List bytes,
+  });
+
+  Future<void> submitAssignment({
+    required String groupId,
+    required String fileUrl,
+    required String link,
+  });
+
+  Future<Map<String, dynamic>?> fetchMySubmission(String groupId);
 
   Future<Map<String, dynamic>> fetchSettings();
 }
@@ -114,7 +126,10 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
         throw const StudentRemoteException('수업 참여에 실패했습니다. 수업 코드를 확인해주세요.');
       }
 
-      return jsonDecode(response.body) as Map<String, dynamic>;
+      final Map<String, dynamic> decoded =
+          jsonDecode(response.body) as Map<String, dynamic>;
+
+      return decoded['data'] as Map<String, dynamic>? ?? decoded;
     } on http.ClientException catch (error) {
       debugPrint('[Student API] EXCEPTION $error');
       throw const StudentRemoteException('네트워크 연결을 확인한 뒤 다시 시도해주세요.');
@@ -122,19 +137,6 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
       debugPrint('[Student API] EXCEPTION $error');
       throw const StudentRemoteException('수업 참여 응답 형식을 확인할 수 없습니다.');
     }
-  }
-
-  @override
-  Future<Map<String, dynamic>> fetchMyGroup(String classId) async {
-    final Uri endpoint = _buildUri(
-      '/groups/my/${Uri.encodeComponent(classId)}',
-    );
-
-    return _getData(
-      endpoint: endpoint,
-      failureMessage: '내 모둠 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
-      formatMessage: '내 모둠 정보 응답 형식을 확인할 수 없습니다.',
-    );
   }
 
   @override
@@ -186,6 +188,115 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
       failureMessage: '파일 업로드 URL을 발급받지 못했습니다. 잠시 후 다시 시도해주세요.',
       formatMessage: '파일 업로드 URL 응답 형식을 확인할 수 없습니다.',
     );
+  }
+
+  @override
+  Future<void> uploadPresignedFile({
+    required String uploadUrl,
+    required String contentType,
+    required Uint8List bytes,
+  }) async {
+    final Uri? endpoint = Uri.tryParse(uploadUrl);
+
+    if (endpoint == null || !endpoint.hasScheme || endpoint.host.isEmpty) {
+      throw const StudentRemoteException('파일 업로드 주소가 올바르지 않습니다.');
+    }
+
+    try {
+      debugPrint('[Student API] REQUEST PUT $endpoint');
+      debugPrint('[Student API] Upload Content-Type: $contentType');
+
+      final http.Response response = await _client.put(
+        endpoint,
+        headers: <String, String>{'Content-Type': contentType},
+        body: bytes,
+      );
+
+      debugPrint(
+        '[Student API] RESPONSE ${response.statusCode} ${response.request?.url ?? ''}',
+      );
+      debugPrint(
+        '[Student API] Response Body: ${response.body.isEmpty ? '(empty)' : response.body}',
+      );
+
+      if (response.statusCode != 200 &&
+          response.statusCode != 201 &&
+          response.statusCode != 204) {
+        throw const StudentRemoteException('파일 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      }
+    } on http.ClientException catch (error) {
+      debugPrint('[Student API] EXCEPTION $error');
+      throw const StudentRemoteException('네트워크 연결을 확인한 뒤 다시 시도해주세요.');
+    }
+  }
+
+  @override
+  Future<void> submitAssignment({
+    required String groupId,
+    required String fileUrl,
+    required String link,
+  }) async {
+    final Uri endpoint = _buildUri('/assignments/submissions');
+    final Map<String, dynamic> body = <String, dynamic>{
+      'groupId': groupId.trim(),
+    };
+
+    if (fileUrl.trim().isNotEmpty) {
+      body['fileUrl'] = fileUrl.trim();
+    }
+    if (link.trim().isNotEmpty) {
+      body['link'] = link.trim();
+    }
+
+    await _postData(
+      endpoint: endpoint,
+      body: body,
+      successStatusCode: 201,
+      failureMessage: '과제 제출에 실패했습니다. 잠시 후 다시 시도해주세요.',
+      formatMessage: '과제 제출 응답 형식을 확인할 수 없습니다.',
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>?> fetchMySubmission(String groupId) async {
+    final Uri endpoint = _buildUri(
+      '/assignments/submissions/my/${Uri.encodeComponent(groupId)}',
+    );
+
+    try {
+      debugPrint('[Student API] REQUEST GET $endpoint');
+
+      final http.Response response = await _client.get(
+        endpoint,
+        headers: _headers(),
+      );
+
+      debugPrint(
+        '[Student API] RESPONSE ${response.statusCode} ${response.request?.url ?? ''}',
+      );
+      debugPrint(
+        '[Student API] Response Body: ${response.body.isEmpty ? '(empty)' : response.body}',
+      );
+
+      if (response.statusCode == 404) {
+        return null; // 아직 제출 내역이 없음
+      }
+
+      if (response.statusCode != 200) {
+        throw const StudentRemoteException('내 과제 제출 내역을 불러오지 못했습니다.');
+      }
+
+      final Map<String, dynamic> decoded =
+          jsonDecode(response.body) as Map<String, dynamic>;
+
+      return decoded['data'] as Map<String, dynamic>? ?? decoded;
+    } on http.ClientException catch (error) {
+      debugPrint('[Student API] EXCEPTION $error');
+      throw const StudentRemoteException('네트워크 연결을 확인한 뒤 다시 시도해주세요.');
+    } on FormatException catch (error) {
+      debugPrint('[Student API] EXCEPTION $error');
+      throw const StudentRemoteException('제출 내역 응답 형식을 확인할 수 없습니다.');
+    }
   }
 
   @override
