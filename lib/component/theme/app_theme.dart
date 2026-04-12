@@ -100,6 +100,21 @@ class AppTheme {
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
       ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF27334B), // AppColors.primaryInk와 유사한 다크 톤
+        contentTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        elevation: 6,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        actionTextColor: AppColors.accentBlue,
+      ),
       dividerColor: AppColors.border,
     );
   }
