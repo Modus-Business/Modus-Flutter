@@ -13,7 +13,6 @@ import 'package:modus_flutter/features/auth/domain/usecases/send_email_verificat
 import 'package:modus_flutter/features/auth/domain/usecases/signup_use_case.dart';
 import 'package:modus_flutter/features/auth/domain/usecases/verify_email_code_use_case.dart';
 import 'package:modus_flutter/features/auth/presentation/screens/auth_screen.dart';
-import 'package:modus_flutter/main.dart';
 import 'package:modus_flutter/routes/app_routes.dart';
 
 void main() {
@@ -120,14 +119,16 @@ void main() {
     expect(find.text('처음부터 다시'), findsOneWidget);
   });
 
-  testWidgets('회원가입 성공 시 로그인 화면으로 전환되고 안내 메시지를 보여준다', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('회원가입 성공 시 설문 화면으로 이동한다', (WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
       MaterialApp(
+        routes: {
+          AppRoutes.survey: (BuildContext context) =>
+              const Scaffold(body: Text('survey')),
+        },
         home: AuthScreen(
           initialState: AuthFormState.initial(mode: AuthMode.signup),
           loginUseCase: LoginUseCase(const _FakeAuthRepository()),
@@ -166,8 +167,7 @@ void main() {
     await tester.tap(find.text('회원가입'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Welcome'), findsOneWidget);
-    expect(find.text('회원가입하기  ↗'), findsOneWidget);
+    expect(find.text('survey'), findsOneWidget);
   });
 
   testWidgets('회원가입 실패 시 에러 메시지를 보여준다', (WidgetTester tester) async {
@@ -356,7 +356,12 @@ void main() {
   });
 
   testWidgets('회원가입 중 로그인하기를 누르면 로그인 화면으로 복귀한다', (WidgetTester tester) async {
-    await tester.pumpWidget(const MyApp(initialRoute: '/signup'));
+    await tester.pumpWidget(
+      _buildAuthTestApp(
+        mode: AuthMode.signup,
+        repository: const _FakeAuthRepository(),
+      ),
+    );
 
     await tester.ensureVisible(find.text('로그인하기'));
     await tester.tap(find.text('로그인하기'));
@@ -371,7 +376,12 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(const MyApp(initialRoute: '/login'));
+    await tester.pumpWidget(
+      _buildAuthTestApp(
+        mode: AuthMode.login,
+        repository: const _FakeAuthRepository(),
+      ),
+    );
 
     expect(find.text('Welcome'), findsOneWidget);
     expect(find.text('SIGN IN'), findsOneWidget);

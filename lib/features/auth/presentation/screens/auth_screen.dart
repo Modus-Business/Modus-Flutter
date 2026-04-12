@@ -236,6 +236,9 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
 
+    final String signupEmail = _state.signupEmail;
+    final String signupPassword = _state.signupPassword;
+
     setState(() {
       _isSubmittingSignup = true;
       _signupErrorMessage = null;
@@ -257,21 +260,40 @@ class _AuthScreenState extends State<AuthScreen> {
         return;
       }
 
-      final String signupEmail = _state.signupEmail;
-      _fullNameController.clear();
-      _signupEmailController.clear();
-      _signupPasswordController.clear();
-      _signupPasswordConfirmController.clear();
-      _verificationCodeController.clear();
-      _loginPasswordController.clear();
+      try {
+        await _loginUseCase(
+          LoginParams(email: signupEmail, password: signupPassword),
+        );
+      } on AuthFailure catch (error) {
+        if (!mounted) {
+          return;
+        }
 
-      _updateState(
-        AuthFormState.initial(
-          mode: AuthMode.login,
-        ).copyWith(loginEmail: signupEmail),
-      );
-      _showPendingMessage('회원가입이 완료되었습니다. 로그인해 주세요.');
-      _syncUrl();
+        _moveToLoginAfterSignup(signupEmail);
+        _showPendingMessage('회원가입은 완료됐지만 자동 로그인에 실패했습니다. 다시 로그인해 주세요.');
+        setState(() {
+          _loginErrorMessage = error.message;
+        });
+        return;
+      } catch (_) {
+        if (!mounted) {
+          return;
+        }
+
+        _moveToLoginAfterSignup(signupEmail);
+        _showPendingMessage('회원가입은 완료됐지만 자동 로그인에 실패했습니다. 다시 로그인해 주세요.');
+        setState(() {
+          _loginErrorMessage = '로그인 처리 중 문제가 발생했습니다. 다시 시도해주세요.';
+        });
+        return;
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      _clearSignupControllers();
+      Navigator.of(context).pushReplacementNamed(AppRoutes.survey);
     } on AuthFailure catch (error) {
       if (!mounted) {
         return;
@@ -295,6 +317,26 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       }
     }
+  }
+
+  void _clearSignupControllers() {
+    _fullNameController.clear();
+    _signupEmailController.clear();
+    _signupPasswordController.clear();
+    _signupPasswordConfirmController.clear();
+    _verificationCodeController.clear();
+  }
+
+  void _moveToLoginAfterSignup(String signupEmail) {
+    _clearSignupControllers();
+    _loginPasswordController.clear();
+
+    _updateState(
+      AuthFormState.initial(
+        mode: AuthMode.login,
+      ).copyWith(loginEmail: signupEmail),
+    );
+    _syncUrl();
   }
 
   Future<void> _handleSignupContinue() async {

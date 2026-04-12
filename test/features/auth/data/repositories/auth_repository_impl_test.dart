@@ -41,7 +41,7 @@ void main() {
 
 class _FakeAuthRemoteDataSource implements AuthRemoteDataSource {
   String? requestedRefreshToken;
-
+ㅇ
   @override
   Future<void> login(LoginParams params) async {}
 
@@ -59,5 +59,10 @@ class _FakeAuthRemoteDataSource implements AuthRemoteDataSource {
   @override
   Future<void> logout(String refreshToken) async {
     requestedRefreshToken = refreshToken;
+  }
+
+  @override
+  Future<bool> refreshTokens(String refreshToken) async {
+    return true;
   }
 }

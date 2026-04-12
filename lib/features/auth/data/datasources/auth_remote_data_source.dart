@@ -41,6 +41,7 @@ abstract class AuthRemoteDataSource {
   Future<void> sendEmailVerification(SendSignupVerificationParams params);
   Future<void> verifyEmailCode(VerifyEmailCodeParams params);
   Future<void> logout(String refreshToken);
+  Future<bool> refreshTokens(String refreshToken);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -144,6 +145,26 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } on http.ClientException catch (error) {
       _logException(error);
       throw const AuthRemoteException.network();
+    }
+  }
+
+  @override
+  Future<bool> refreshTokens(String refreshToken) async {
+    try {
+      final http.Response response = await _post(
+        endpoint: _buildUri('/auth/login/refresh'),
+        body: <String, dynamic>{'refreshToken': refreshToken.trim()},
+        successStatusCodes: const <int>{200},
+        clientErrorMessage: '토큰이 만료되었습니다.',
+        unknownMessage: '토큰 갱신에 실패했습니다.',
+      );
+      await _saveTokensFromResponse(response);
+      return true;
+    } on AuthRemoteException {
+      return false;
+    } on http.ClientException catch (error) {
+      _logException(error);
+      return false;
     }
   }
 
