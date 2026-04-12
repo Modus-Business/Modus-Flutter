@@ -21,6 +21,8 @@ abstract class StudentRepository {
 
   Future<StudentSubmission?> fetchMySubmission(String groupId);
 
+  Future<StudentGroupNickname> fetchGroupNickname(String groupId);
+
   Future<StudentProfile> fetchProfile();
 
   List<StudentClass> getClasses();

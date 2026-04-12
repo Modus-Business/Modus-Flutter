@@ -40,6 +40,8 @@ abstract class StudentRemoteDataSource {
 
   Future<Map<String, dynamic>?> fetchMySubmission(String groupId);
 
+  Future<Map<String, dynamic>> fetchGroupNickname(String groupId);
+
   Future<Map<String, dynamic>> fetchSettings();
 }
 
@@ -297,6 +299,17 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
       debugPrint('[Student API] EXCEPTION $error');
       throw const StudentRemoteException('제출 내역 응답 형식을 확인할 수 없습니다.');
     }
+  }
+
+  @override
+  Future<Map<String, dynamic>> fetchGroupNickname(String groupId) async {
+    final Uri endpoint = _buildUri('/groups/${Uri.encodeComponent(groupId)}/nickname');
+
+    return _getData(
+      endpoint: endpoint,
+      failureMessage: '모둠 닉네임을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+      formatMessage: '모둠 닉네임 응답 형식을 확인할 수 없습니다.',
+    );
   }
 
   @override

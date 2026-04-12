@@ -142,3 +142,15 @@ class StudentClass {
     );
   }
 }
+
+class StudentGroupNickname {
+  const StudentGroupNickname({
+    required this.groupId,
+    required this.nickname,
+    required this.reason,
+  });
+
+  final String groupId;
+  final String nickname;
+  final String reason;
+}

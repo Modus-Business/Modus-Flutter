@@ -330,6 +330,21 @@ class StudentRepositoryImpl implements StudentRepository {
   }
 
   @override
+  Future<StudentGroupNickname> fetchGroupNickname(String groupId) async {
+    if (remoteDataSource == null) {
+      throw const StudentRemoteException('모둠 닉네임 API가 연결되지 않았습니다.');
+    }
+
+    final Map<String, dynamic> data = await remoteDataSource!.fetchGroupNickname(groupId);
+
+    return StudentGroupNickname(
+      groupId: data['groupId'] as String? ?? groupId,
+      nickname: data['nickname'] as String? ?? '알 수 없는 닉네임',
+      reason: data['reason'] as String? ?? '닉네임 설명이 제공되지 않았습니다.',
+    );
+  }
+
+  @override
   List<StudentClass> getClasses() {
     return List<StudentClass>.from(_cachedClasses);
   }

@@ -104,6 +104,48 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
     );
   }
 
+  Future<void> _showGroupNickname() async {
+    final String? groupId = _studentClass.group?.id;
+
+    if (groupId == null || groupId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('모둠 배정 후에 닉네임을 조회할 수 있습니다.')));
+      return;
+    }
+
+    final StudentRepository? repository = StudentRepositoryRegistry.repository;
+    if (repository == null) return;
+
+    try {
+      final StudentGroupNickname nicknameData = await repository.fetchGroupNickname(groupId);
+
+      if (!mounted) return;
+
+      showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            nicknameData.nickname,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 20, color: Color(0xFF27334B)),
+          ),
+          content: Text(
+            nicknameData.reason,
+            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16, color: Color(0xFF7D87A0), height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('닫기'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('모둠 닉네임을 불러오지 못했습니다.')));
+    }
+  }
+
   Future<void> _loadGroup() async {
     final StudentRepository? repository = StudentRepositoryRegistry.repository;
 
@@ -305,6 +347,12 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
                             icon: Icons.notifications_none_rounded,
                             isFilled: false,
                             onTap: _showAnnouncements,
+                          ),
+                          _ActionButton(
+                            label: '모둠 조회',
+                            icon: Icons.search_rounded,
+                            isFilled: false,
+                            onTap: _showGroupNickname,
                           ),
                           _ActionButton(
                             label: '과제 제출',
