@@ -13,11 +13,16 @@ import '../features/auth/domain/usecases/send_email_verification_use_case.dart';
 import '../features/auth/domain/usecases/signup_use_case.dart';
 import '../features/auth/domain/usecases/verify_email_code_use_case.dart';
 import '../features/auth/presentation/screens/auth_screen.dart';
+import '../features/auth/presentation/screens/splash_screen.dart';
 import '../features/student/data/datasources/student_remote_data_source.dart';
 import '../features/student/data/repositories/student_repository_impl.dart';
 import '../features/student/presentation/screens/student_class_detail_screen.dart';
 import '../features/student/presentation/screens/student_classes_route_screen.dart';
 import '../features/student/presentation/screens/student_settings_screen.dart';
+import '../features/survey/data/datasources/survey_remote_data_source.dart';
+import '../features/survey/data/repositories/survey_repository_impl.dart';
+import '../features/survey/domain/usecases/submit_survey_use_case.dart';
+import '../features/survey/presentation/screens/student_survey_screen.dart';
 import 'app_routes.dart';
 
 class RouteGenerator {
@@ -44,6 +49,15 @@ class RouteGenerator {
       client: _httpClient,
       baseUrl: _baseUrl,
     ),
+  );
+  static final SurveyRepositoryImpl _surveyRepository = SurveyRepositoryImpl(
+    remoteDataSource: SurveyRemoteDataSourceImpl(
+      client: _httpClient,
+      baseUrl: _baseUrl,
+    ),
+  );
+  static final SubmitSurveyUseCase _submitSurveyUseCase = SubmitSurveyUseCase(
+    _surveyRepository,
   );
 
   static String get _baseUrl {
@@ -133,6 +147,15 @@ class RouteGenerator {
                 unawaited(_logoutAndNavigate(context));
               },
             );
+          case AppRouteKind.survey:
+            return StudentSurveyScreen(
+              submitSurveyUseCase: _submitSurveyUseCase,
+              onCompleted: () {
+                Navigator.of(context).pushReplacementNamed(AppRoutes.classes);
+              },
+            );
+          case AppRouteKind.splash:
+            return const SplashScreen();
           case AppRouteKind.auth:
             return AuthScreen(
               initialState: _authFlowRepository.buildInitialState(
