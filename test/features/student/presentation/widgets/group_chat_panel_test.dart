@@ -9,7 +9,9 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     final TextEditingController controller = TextEditingController();
+    final ScrollController scrollController = ScrollController();
     addTearDown(controller.dispose);
+    addTearDown(scrollController.dispose);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -30,9 +32,11 @@ void main() {
                     ),
                   ],
                   controller: controller,
+                  scrollController: scrollController,
                   editingMessageId: null,
                   onChanged: (_) {},
                   onSend: () {},
+                  onInterventionAdvice: () {},
                   onEdit: (_) {},
                   onDelete: (_) {},
                 ),
@@ -45,5 +49,7 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('안녕하세요'), findsOneWidget);
+    expect(find.text('AI 조언'), findsOneWidget);
+    expect(find.text('기여도'), findsNothing);
   });
 }

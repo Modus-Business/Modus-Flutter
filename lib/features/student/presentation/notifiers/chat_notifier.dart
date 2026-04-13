@@ -15,10 +15,12 @@ class ChatNotifier extends ChangeNotifier {
   ChatNotifier({required ChatSocketService service}) : _service = service;
 
   final ChatSocketService _service;
+  ValueChanged<int>? onInterventionCheckDue;
 
   // 메시지 목록 (서버의 sentAt 기준으로 정렬)
   final List<StudentChatMessage> _messages = [];
   List<StudentChatMessage> get messages => List.unmodifiable(_messages);
+  int _lastInterventionCheckBucket = 0;
 
   // 서버에서 확정된 내 닉네임 (isMine 판별에 사용)
   String? _myNickname;
@@ -54,6 +56,7 @@ class ChatNotifier extends ChangeNotifier {
 
     _messages.clear();
     _myNickname = null;
+    _lastInterventionCheckBucket = 0;
     _isConnected = false;
     notifyListeners();
 
@@ -91,6 +94,7 @@ class ChatNotifier extends ChangeNotifier {
         _messages
           ..clear()
           ..addAll(rawMessages.map(_toEntity));
+        _lastInterventionCheckBucket = _messages.length ~/ 10;
         notifyListeners();
       }
       ..onMessage = (ChatSocketMessage msg) {
@@ -98,6 +102,7 @@ class ChatNotifier extends ChangeNotifier {
         final bool exists = _messages.any((m) => m.id == msg.messageId);
         if (!exists) {
           _messages.add(_toEntity(msg));
+          _notifyInterventionCheckIfNeeded();
           notifyListeners();
         }
       }
@@ -114,6 +119,20 @@ class ChatNotifier extends ChangeNotifier {
             : '채팅 서버 연결에 실패했습니다. $message';
         notifyListeners();
       };
+  }
+
+  void _notifyInterventionCheckIfNeeded() {
+    if (_messages.length < 10 || _messages.length % 10 != 0) {
+      return;
+    }
+
+    final int currentBucket = _messages.length ~/ 10;
+    if (currentBucket <= _lastInterventionCheckBucket) {
+      return;
+    }
+
+    _lastInterventionCheckBucket = currentBucket;
+    onInterventionCheckDue?.call(_messages.length);
   }
 
   StudentChatMessage _toEntity(ChatSocketMessage msg) {
@@ -145,6 +164,7 @@ class ChatNotifier extends ChangeNotifier {
 
   @override
   void dispose() {
+    onInterventionCheckDue = null;
     _service.detachCallbacks();
     super.dispose();
   }

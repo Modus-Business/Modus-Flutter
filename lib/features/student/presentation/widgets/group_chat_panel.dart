@@ -8,9 +8,13 @@ class GroupChatPanel extends StatelessWidget {
     required this.groupAssigned,
     required this.messages,
     required this.controller,
+    required this.scrollController,
     required this.editingMessageId,
+    this.isCheckingAdvice = false,
+    this.isCheckingInterventionAdvice = false,
     required this.onChanged,
     required this.onSend,
+    required this.onInterventionAdvice,
     required this.onEdit,
     required this.onDelete,
   });
@@ -18,9 +22,13 @@ class GroupChatPanel extends StatelessWidget {
   final bool groupAssigned;
   final List<StudentChatMessage> messages;
   final TextEditingController controller;
+  final ScrollController scrollController;
   final String? editingMessageId;
+  final bool isCheckingAdvice;
+  final bool isCheckingInterventionAdvice;
   final ValueChanged<String> onChanged;
   final VoidCallback onSend;
+  final VoidCallback onInterventionAdvice;
   final ValueChanged<StudentChatMessage> onEdit;
   final ValueChanged<StudentChatMessage> onDelete;
 
@@ -81,6 +89,7 @@ class GroupChatPanel extends StatelessWidget {
                             message: '메시지가 아직 없습니다.\n인사를 나눠보세요!',
                           )
                         : ListView.builder(
+                            controller: scrollController,
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             itemCount: messages.length,
                             itemBuilder: (context, index) {
@@ -117,7 +126,7 @@ class GroupChatPanel extends StatelessWidget {
                       TextField(
                         controller: controller,
                         onChanged: onChanged,
-                        enabled: groupAssigned,
+                        enabled: groupAssigned && !isCheckingAdvice,
                         minLines: 1,
                         maxLines: 4,
                         decoration: const InputDecoration(
@@ -138,35 +147,81 @@ class GroupChatPanel extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          GestureDetector(
-                            onTap:
-                                controller.text.trim().isNotEmpty &&
-                                    groupAssigned
-                                ? onSend
-                                : null,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 160),
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color:
-                                    controller.text.trim().isNotEmpty &&
-                                        groupAssigned
-                                    ? const Color(0xFFB7C5FF)
-                                    : const Color(0xFFE3E9FA),
-                              ),
-                              child: Icon(
-                                Icons.arrow_upward_rounded,
-                                color:
-                                    controller.text.trim().isNotEmpty &&
-                                        groupAssigned
-                                    ? Colors.white
-                                    : const Color(0xFF92A0BE),
-                              ),
-                            ),
+                          Builder(
+                            builder: (BuildContext context) {
+                              final bool canAskAdvice =
+                                  groupAssigned &&
+                                  !isCheckingAdvice &&
+                                  !isCheckingInterventionAdvice;
+
+                              return OutlinedButton.icon(
+                                onPressed: canAskAdvice
+                                    ? onInterventionAdvice
+                                    : null,
+                                style: _adviceButtonStyle(),
+                                icon: isCheckingInterventionAdvice
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Color(0xFF92A0BE),
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.auto_awesome_rounded,
+                                        size: 18,
+                                      ),
+                                label: Text(
+                                  isCheckingInterventionAdvice
+                                      ? '확인 중'
+                                      : 'AI 조언',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          Builder(
+                            builder: (BuildContext context) {
+                              final bool canSend =
+                                  controller.text.trim().isNotEmpty &&
+                                  groupAssigned &&
+                                  !isCheckingAdvice;
+
+                              return GestureDetector(
+                                onTap: canSend ? onSend : null,
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 160),
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: canSend
+                                        ? const Color(0xFFB7C5FF)
+                                        : const Color(0xFFE3E9FA),
+                                  ),
+                                  child: isCheckingAdvice
+                                      ? const Padding(
+                                          padding: EdgeInsets.all(12),
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.4,
+                                            color: Color(0xFF92A0BE),
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.arrow_upward_rounded,
+                                          color: canSend
+                                              ? Colors.white
+                                              : const Color(0xFF92A0BE),
+                                        ),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -178,6 +233,16 @@ class GroupChatPanel extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  ButtonStyle _adviceButtonStyle() {
+    return OutlinedButton.styleFrom(
+      foregroundColor: const Color(0xFF586CE8),
+      disabledForegroundColor: const Color(0xFF92A0BE),
+      side: const BorderSide(color: Color(0xFFD9E1F3)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
     );
   }
 }
