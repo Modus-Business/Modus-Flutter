@@ -1,3 +1,6 @@
+import '../../domain/entities/chat_contribution_analysis.dart';
+import '../../domain/entities/chat_intervention_advice.dart';
+import '../../domain/entities/chat_message_advice.dart';
 import '../../domain/entities/student_class.dart';
 import '../../domain/entities/student_profile.dart';
 import '../../domain/entities/student_upload_file.dart';
@@ -319,8 +322,8 @@ class StudentRepositoryImpl implements StudentRepository {
       return null;
     }
 
-    final Map<String, dynamic>? data =
-        await remoteDataSource!.fetchMySubmission(groupId);
+    final Map<String, dynamic>? data = await remoteDataSource!
+        .fetchMySubmission(groupId);
 
     if (data == null) {
       return null;
@@ -335,13 +338,57 @@ class StudentRepositoryImpl implements StudentRepository {
       throw const StudentRemoteException('모둠 닉네임 API가 연결되지 않았습니다.');
     }
 
-    final Map<String, dynamic> data = await remoteDataSource!.fetchGroupNickname(groupId);
+    final Map<String, dynamic> data = await remoteDataSource!
+        .fetchGroupNickname(groupId);
 
     return StudentGroupNickname(
       groupId: data['groupId'] as String? ?? groupId,
       nickname: data['nickname'] as String? ?? '알 수 없는 닉네임',
       reason: data['reason'] as String? ?? '닉네임 설명이 제공되지 않았습니다.',
     );
+  }
+
+  @override
+  Future<StudentChatMessageAdvice> requestChatMessageAdvice({
+    required String groupId,
+    required String content,
+  }) async {
+    if (remoteDataSource == null) {
+      throw const StudentRemoteException('메시지 AI 조언 API가 연결되지 않았습니다.');
+    }
+
+    final Map<String, dynamic> data = await remoteDataSource!
+        .requestChatMessageAdvice(groupId: groupId, content: content);
+
+    return _mapRemoteChatMessageAdvice(data, fallbackGroupId: groupId);
+  }
+
+  @override
+  Future<StudentChatInterventionAdvice> requestChatInterventionAdvice(
+    String groupId,
+  ) async {
+    if (remoteDataSource == null) {
+      throw const StudentRemoteException('그룹 대화 AI 조언 API가 연결되지 않았습니다.');
+    }
+
+    final Map<String, dynamic> data = await remoteDataSource!
+        .requestChatInterventionAdvice(groupId);
+
+    return _mapRemoteChatInterventionAdvice(data, fallbackGroupId: groupId);
+  }
+
+  @override
+  Future<StudentChatContributionAnalysis> requestChatContributionAnalysis(
+    String groupId,
+  ) async {
+    if (remoteDataSource == null) {
+      throw const StudentRemoteException('그룹 대화 기여도 분석 API가 연결되지 않았습니다.');
+    }
+
+    final Map<String, dynamic> data = await remoteDataSource!
+        .requestChatContributionAnalysis(groupId);
+
+    return _mapRemoteChatContributionAnalysis(data, fallbackGroupId: groupId);
   }
 
   @override
@@ -397,9 +444,14 @@ class StudentRepositoryImpl implements StudentRepository {
         (json['classCode'] as String?)?.trim().isNotEmpty == true
         ? (json['classCode'] as String).trim()
         : '코드 미정';
+    final String? groupId = (myGroup?['groupId'] as String?)?.trim();
     final String? groupName = (myGroup?['name'] as String?)?.trim();
-    final bool groupAssigned = groupName != null && groupName.isNotEmpty;
-    final String resolvedGroupName = groupName ?? '';
+    final bool groupAssigned =
+        (groupId != null && groupId.isNotEmpty) ||
+        (groupName != null && groupName.isNotEmpty);
+    final String resolvedGroupName = groupName != null && groupName.isNotEmpty
+        ? groupName
+        : '내 모둠';
 
     return StudentClass(
       id: classId,
@@ -409,13 +461,13 @@ class StudentRepositoryImpl implements StudentRepository {
           : '수업 설명이 아직 등록되지 않았습니다.',
       classCode: classCode,
       groupAssigned: groupAssigned,
-      groupName: groupAssigned ? groupName : null,
+      groupName: groupAssigned ? resolvedGroupName : null,
       assignments: const <StudentAssignment>[],
       announcements: const <StudentAnnouncement>[],
       chatMessages: const <StudentChatMessage>[],
       group: groupAssigned
           ? StudentGroup(
-              id: myGroup?['groupId'] as String?,
+              id: groupId,
               name: resolvedGroupName,
               members: const <String>[],
               classCode: classCode,
@@ -560,6 +612,73 @@ class StudentRepositoryImpl implements StudentRepository {
       submittedBy: json['submittedBy'] as String? ?? '',
       submittedAt: _dateLabel(json['submittedAt'] as String?),
       updatedAt: _dateLabel(json['updatedAt'] as String?),
+    );
+  }
+
+  StudentChatMessageAdvice _mapRemoteChatMessageAdvice(
+    Map<String, dynamic> json, {
+    required String fallbackGroupId,
+  }) {
+    return StudentChatMessageAdvice(
+      groupId: json['groupId'] as String? ?? fallbackGroupId,
+      riskLevel: ChatMessageRiskLevel.fromValue(json['riskLevel'] as String?),
+      shouldBlock: json['shouldBlock'] as bool? ?? false,
+      warning: json['warning'] as String? ?? '',
+      suggestedRewrite: json['suggestedRewrite'] as String? ?? '',
+    );
+  }
+
+  StudentChatInterventionAdvice _mapRemoteChatInterventionAdvice(
+    Map<String, dynamic> json, {
+    required String fallbackGroupId,
+  }) {
+    return StudentChatInterventionAdvice(
+      groupId: json['groupId'] as String? ?? fallbackGroupId,
+      interventionNeeded: json['interventionNeeded'] as bool? ?? false,
+      interventionType: ChatInterventionType.fromValue(
+        json['interventionType'] as String?,
+      ),
+      reason: json['reason'] as String? ?? '',
+      suggestedMessage: json['suggestedMessage'] as String? ?? '',
+    );
+  }
+
+  StudentChatContributionAnalysis _mapRemoteChatContributionAnalysis(
+    Map<String, dynamic> json, {
+    required String fallbackGroupId,
+  }) {
+    final List<dynamic> rawMembers =
+        json['members'] as List<dynamic>? ?? <dynamic>[];
+
+    return StudentChatContributionAnalysis(
+      groupId: json['groupId'] as String? ?? fallbackGroupId,
+      summary: json['summary'] as String? ?? '',
+      members: rawMembers
+          .whereType<Map<String, dynamic>>()
+          .map(_mapRemoteChatContributionMember)
+          .toList(),
+    );
+  }
+
+  StudentChatContributionMember _mapRemoteChatContributionMember(
+    Map<String, dynamic> json,
+  ) {
+    final List<dynamic> rawTypes =
+        json['contributionTypes'] as List<dynamic>? ?? <dynamic>[];
+    final num score = json['contributionScore'] as num? ?? 0;
+
+    return StudentChatContributionMember(
+      nickname: json['nickname'] as String? ?? '알 수 없는 닉네임',
+      contributionScore: score.round(),
+      contributionLevel: ChatContributionLevel.fromValue(
+        json['contributionLevel'] as String?,
+      ),
+      contributionTypes: rawTypes
+          .whereType<String>()
+          .where((String type) => type.trim().isNotEmpty)
+          .map((String type) => type.trim())
+          .toList(),
+      reason: json['reason'] as String? ?? '',
     );
   }
 }

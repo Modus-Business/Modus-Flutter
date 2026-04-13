@@ -1,3 +1,6 @@
+import '../entities/chat_contribution_analysis.dart';
+import '../entities/chat_intervention_advice.dart';
+import '../entities/chat_message_advice.dart';
 import '../entities/student_class.dart';
 import '../entities/student_profile.dart';
 import '../entities/student_upload_file.dart';
@@ -22,6 +25,19 @@ abstract class StudentRepository {
   Future<StudentSubmission?> fetchMySubmission(String groupId);
 
   Future<StudentGroupNickname> fetchGroupNickname(String groupId);
+
+  Future<StudentChatMessageAdvice> requestChatMessageAdvice({
+    required String groupId,
+    required String content,
+  });
+
+  Future<StudentChatInterventionAdvice> requestChatInterventionAdvice(
+    String groupId,
+  );
+
+  Future<StudentChatContributionAnalysis> requestChatContributionAnalysis(
+    String groupId,
+  );
 
   Future<StudentProfile> fetchProfile();
 

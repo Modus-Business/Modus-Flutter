@@ -42,6 +42,15 @@ abstract class StudentRemoteDataSource {
 
   Future<Map<String, dynamic>> fetchGroupNickname(String groupId);
 
+  Future<Map<String, dynamic>> requestChatMessageAdvice({
+    required String groupId,
+    required String content,
+  });
+
+  Future<Map<String, dynamic>> requestChatInterventionAdvice(String groupId);
+
+  Future<Map<String, dynamic>> requestChatContributionAnalysis(String groupId);
+
   Future<Map<String, dynamic>> fetchSettings();
 }
 
@@ -186,7 +195,7 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
         'contentType': contentType.trim(),
         'purpose': purpose.trim(),
       },
-      successStatusCode: 201,
+      successStatusCodes: const <int>{201},
       failureMessage: '파일 업로드 URL을 발급받지 못했습니다. 잠시 후 다시 시도해주세요.',
       formatMessage: '파일 업로드 URL 응답 형식을 확인할 수 없습니다.',
     );
@@ -253,7 +262,7 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
     await _postData(
       endpoint: endpoint,
       body: body,
-      successStatusCode: 201,
+      successStatusCodes: const <int>{201},
       failureMessage: '과제 제출에 실패했습니다. 잠시 후 다시 시도해주세요.',
       formatMessage: '과제 제출 응답 형식을 확인할 수 없습니다.',
     );
@@ -303,12 +312,63 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
 
   @override
   Future<Map<String, dynamic>> fetchGroupNickname(String groupId) async {
-    final Uri endpoint = _buildUri('/groups/${Uri.encodeComponent(groupId)}/nickname');
+    final Uri endpoint = _buildUri(
+      '/groups/${Uri.encodeComponent(groupId)}/nickname',
+    );
 
     return _getData(
       endpoint: endpoint,
       failureMessage: '모둠 닉네임을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
       formatMessage: '모둠 닉네임 응답 형식을 확인할 수 없습니다.',
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> requestChatMessageAdvice({
+    required String groupId,
+    required String content,
+  }) async {
+    final Uri endpoint = _buildUri('/chat/message-advice');
+
+    return _postData(
+      endpoint: endpoint,
+      body: <String, dynamic>{
+        'groupId': groupId.trim(),
+        'content': content.trim(),
+      },
+      successStatusCodes: const <int>{200, 201},
+      failureMessage: '메시지 AI 조언을 받지 못했습니다. 잠시 후 다시 시도해주세요.',
+      formatMessage: '메시지 AI 조언 응답 형식을 확인할 수 없습니다.',
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> requestChatInterventionAdvice(
+    String groupId,
+  ) async {
+    final Uri endpoint = _buildUri('/chat/intervention-advice');
+
+    return _postData(
+      endpoint: endpoint,
+      body: <String, dynamic>{'groupId': groupId.trim()},
+      successStatusCodes: const <int>{200, 201},
+      failureMessage: '그룹 대화 AI 조언을 받지 못했습니다. 잠시 후 다시 시도해주세요.',
+      formatMessage: '그룹 대화 AI 조언 응답 형식을 확인할 수 없습니다.',
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> requestChatContributionAnalysis(
+    String groupId,
+  ) async {
+    final Uri endpoint = _buildUri('/chat/contribution-analysis');
+
+    return _postData(
+      endpoint: endpoint,
+      body: <String, dynamic>{'groupId': groupId.trim()},
+      successStatusCodes: const <int>{200, 201},
+      failureMessage: '그룹 대화 기여도 분석을 받지 못했습니다. 잠시 후 다시 시도해주세요.',
+      formatMessage: '그룹 대화 기여도 분석 응답 형식을 확인할 수 없습니다.',
     );
   }
 
@@ -363,7 +423,7 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
   Future<Map<String, dynamic>> _postData({
     required Uri endpoint,
     required Map<String, dynamic> body,
-    required int successStatusCode,
+    required Set<int> successStatusCodes,
     required String failureMessage,
     required String formatMessage,
   }) async {
@@ -386,7 +446,7 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
         '[Student API] Response Body: ${response.body.isEmpty ? '(empty)' : response.body}',
       );
 
-      if (response.statusCode != successStatusCode) {
+      if (!successStatusCodes.contains(response.statusCode)) {
         throw StudentRemoteException(failureMessage);
       }
 
