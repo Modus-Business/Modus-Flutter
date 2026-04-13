@@ -328,20 +328,67 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String? body,
   }) {
     debugPrint('[Auth API] REQUEST $method $endpoint');
-    debugPrint('[Auth API] Headers: $headers');
-    debugPrint('[Auth API] Body: ${body ?? '(empty)'}');
+    debugPrint('[Auth API] Headers: ${_redactHeaders(headers)}');
+    debugPrint('[Auth API] Body: ${_redactJsonBody(body)}');
   }
 
   void _logResponse(http.Response response) {
     debugPrint(
       '[Auth API] RESPONSE ${response.statusCode} ${response.request?.url ?? ''}',
     );
-    debugPrint(
-      '[Auth API] Response Body: ${response.body.isEmpty ? '(empty)' : response.body}',
-    );
+    debugPrint('[Auth API] Response Body: ${_redactJsonBody(response.body)}');
   }
 
   void _logException(Object error) {
     debugPrint('[Auth API] EXCEPTION $error');
+  }
+
+  Map<String, String> _redactHeaders(Map<String, String> headers) {
+    return headers.map((String key, String value) {
+      return MapEntry(key, _isSensitiveKey(key) ? '***' : value);
+    });
+  }
+
+  String _redactJsonBody(String? body) {
+    if (body == null || body.trim().isEmpty) {
+      return '(empty)';
+    }
+
+    try {
+      return jsonEncode(_redactJson(jsonDecode(body)));
+    } on FormatException {
+      return body;
+    }
+  }
+
+  dynamic _redactJson(dynamic value) {
+    if (value is Map) {
+      return value.map((dynamic key, dynamic child) {
+        final String keyText = key.toString();
+        return MapEntry(
+          keyText,
+          _isSensitiveKey(keyText) ? '***' : _redactJson(child),
+        );
+      });
+    }
+
+    if (value is List) {
+      return value.map(_redactJson).toList();
+    }
+
+    return value;
+  }
+
+  bool _isSensitiveKey(String key) {
+    final String normalized = key.toLowerCase();
+    return normalized == 'authorization' ||
+        normalized == 'password' ||
+        normalized == 'passwordconfirmation' ||
+        normalized == 'accesstoken' ||
+        normalized == 'access_token' ||
+        normalized == 'refreshtoken' ||
+        normalized == 'refresh_token' ||
+        normalized == 'token' ||
+        normalized == 'jwt';
   }
 }

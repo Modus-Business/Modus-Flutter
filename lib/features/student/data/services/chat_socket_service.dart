@@ -136,9 +136,7 @@ class ChatSocketService {
               },
             });
 
-      debugPrint(
-        '[Chat Socket] Socket.IO options: ${_maskToken(socketOptions)}',
-      );
+      debugPrint('[Chat Socket] Socket.IO options prepared.');
       sio.cache.clear();
       _socket = sio.io(endpoint.namespaceUrl, socketOptions);
 
@@ -163,7 +161,9 @@ class ChatSocketService {
       ..onConnectError((data) {
         // connect_error: accessToken 만료/누락, 허용되지 않는 origin 등
         final String msg = _extractErrorMessage(data);
-        debugPrint('[Chat Socket] connect_error payload: $data');
+        debugPrint(
+          '[Chat Socket] connect_error payload: ${_sanitizeSocketData(data)}',
+        );
         debugPrint('[Chat Socket] connect_error: $msg');
         onConnectError?.call(msg);
       })
@@ -189,9 +189,7 @@ class ChatSocketService {
       ..on('chat.message', (data) {
         final Map<String, dynamic> json = _toMap(data);
         final ChatSocketMessage msg = ChatSocketMessage.fromJson(json);
-        debugPrint(
-          '[Chat Socket] chat.message: ${msg.nickname}: ${msg.content}',
-        );
+        debugPrint('[Chat Socket] chat.message 수신: ${msg.messageId}');
         onMessage?.call(msg);
       })
       ..on('chat.error', (data) {
@@ -199,13 +197,17 @@ class ChatSocketService {
         final Map<String, dynamic> json = _toMap(data);
         final String msg = json['message'] as String? ?? '채팅 오류가 발생했습니다.';
         final String event = json['event'] as String? ?? 'unknown';
-        debugPrint('[Chat Socket] chat.error payload: $json');
+        debugPrint(
+          '[Chat Socket] chat.error payload: ${_sanitizeSocketData(json)}',
+        );
         debugPrint('[Chat Socket] chat.error (event=$event): $msg');
         onChatError?.call(msg);
       })
       ..onError((data) {
         final String msg = _extractErrorMessage(data);
-        debugPrint('[Chat Socket] socket error payload: $data');
+        debugPrint(
+          '[Chat Socket] socket error payload: ${_sanitizeSocketData(data)}',
+        );
         debugPrint('[Chat Socket] socket error: $msg');
       });
   }
@@ -218,7 +220,7 @@ class ChatSocketService {
     }
     if (content.trim().isEmpty) return;
 
-    debugPrint('[Chat Socket] chat.send: $content');
+    debugPrint('[Chat Socket] chat.send 전송');
     _socket!.emit('chat.send', {'content': content});
   }
 
@@ -275,7 +277,7 @@ class ChatSocketService {
     if (data is Map) {
       return (data['message'] as String?) ??
           (data['error'] as String?) ??
-          data.toString();
+          _sanitizeSocketData(data).toString();
     }
     return data?.toString() ?? '알 수 없는 오류';
   }
@@ -325,15 +327,33 @@ class ChatSocketService {
     return trimmedToken;
   }
 
-  Map<String, dynamic> _maskToken(Map<String, dynamic> options) {
-    final Map<String, dynamic> masked = Map<String, dynamic>.from(options);
-    final Object? auth = masked['auth'];
-
-    if (auth is Map) {
-      masked['auth'] = {...auth, if (auth.containsKey('token')) 'token': '***'};
+  dynamic _sanitizeSocketData(dynamic data) {
+    if (data is Map) {
+      return data.map((dynamic key, dynamic value) {
+        final String keyText = key.toString();
+        return MapEntry(
+          keyText,
+          _isSensitiveLogKey(keyText) ? '***' : _sanitizeSocketData(value),
+        );
+      });
     }
 
-    return masked;
+    if (data is List) {
+      return data.map(_sanitizeSocketData).toList();
+    }
+
+    return data;
+  }
+
+  bool _isSensitiveLogKey(String key) {
+    final String normalized = key.toLowerCase();
+    return normalized == 'authorization' ||
+        normalized == 'token' ||
+        normalized == 'accesstoken' ||
+        normalized == 'access_token' ||
+        normalized == 'refreshtoken' ||
+        normalized == 'refresh_token' ||
+        normalized == 'jwt';
   }
 
   bool _isUuid(String value) {
