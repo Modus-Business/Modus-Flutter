@@ -499,6 +499,19 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
       _isCheckingMessageAdvice = false;
     });
 
+    // 서버가 skip/popup 여부를 결정하므로 클라이언트는 해당 플래그를 우선 따릅니다.
+    if (advice.shouldSkip) {
+      _sendCheckedMessage(draft);
+      return;
+    }
+
+    final bool shouldShowAdviceDialog =
+        forceBlockOriginal || advice.shouldBlock || advice.shouldShowPopup;
+    if (!shouldShowAdviceDialog) {
+      _sendCheckedMessage(draft);
+      return;
+    }
+
     final _MessageAdviceAction action = await _showMessageAdviceDialog(
       advice,
       forceBlockOriginal: forceBlockOriginal,
@@ -648,7 +661,7 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  _messageRiskLevelLabel(advice.riskLevel),
+                  _messageRiskLevelLabel(advice),
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
@@ -766,8 +779,12 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen> {
     return action ?? _MessageAdviceAction.cancel;
   }
 
-  String _messageRiskLevelLabel(ChatMessageRiskLevel riskLevel) {
-    switch (riskLevel) {
+  String _messageRiskLevelLabel(StudentChatMessageAdvice advice) {
+    if (advice.hasRiskLevelLabel) {
+      return advice.riskLevelLabel.trim();
+    }
+
+    switch (advice.riskLevel) {
       case ChatMessageRiskLevel.low:
         return '위험도 낮음';
       case ChatMessageRiskLevel.medium:

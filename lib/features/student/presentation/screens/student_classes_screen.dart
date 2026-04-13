@@ -118,6 +118,17 @@ class StudentClassesScreen extends StatelessWidget {
 class _DateChip extends StatelessWidget {
   const _DateChip();
 
+  String _formatToday() {
+    final DateTime now = DateTime.now();
+    const List<String> weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+
+    // 현재 날짜를 디자인 시안과 동일한 형식으로 노출합니다.
+    return '오늘: ${now.year}. '
+        '${now.month.toString().padLeft(2, '0')}. '
+        '${now.day.toString().padLeft(2, '0')}. '
+        '(${weekdays[now.weekday - 1]})';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -126,21 +137,21 @@ class _DateChip extends StatelessWidget {
         color: const Color(0xFFF1F5FF),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: const FittedBox(
+      child: FittedBox(
         fit: BoxFit.scaleDown,
         alignment: Alignment.centerLeft,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            const Icon(
               Icons.calendar_today_outlined,
               size: 18,
               color: Color(0xFF728BFF),
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Text(
-              '오늘: 2026. 04. 09. (목)',
-              style: TextStyle(
+              _formatToday(),
+              style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF728BFF),

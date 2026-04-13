@@ -619,12 +619,23 @@ class StudentRepositoryImpl implements StudentRepository {
     Map<String, dynamic> json, {
     required String fallbackGroupId,
   }) {
+    final String warning = json['warning'] as String? ?? '';
+    final String suggestedRewrite = json['suggestedRewrite'] as String? ?? '';
+    final bool shouldBlock = json['shouldBlock'] as bool? ?? false;
+
     return StudentChatMessageAdvice(
       groupId: json['groupId'] as String? ?? fallbackGroupId,
       riskLevel: ChatMessageRiskLevel.fromValue(json['riskLevel'] as String?),
-      shouldBlock: json['shouldBlock'] as bool? ?? false,
-      warning: json['warning'] as String? ?? '',
-      suggestedRewrite: json['suggestedRewrite'] as String? ?? '',
+      riskLevelLabel: json['riskLevelLabel'] as String? ?? '',
+      shouldBlock: shouldBlock,
+      shouldShowPopup:
+          json['shouldShowPopup'] as bool? ??
+          shouldBlock ||
+              warning.trim().isNotEmpty ||
+              suggestedRewrite.trim().isNotEmpty,
+      shouldSkip: json['shouldSkip'] as bool? ?? false,
+      warning: warning,
+      suggestedRewrite: suggestedRewrite,
     );
   }
 
